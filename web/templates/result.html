@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Result – Credit Card App{% endblock %}
+
+{% block content %}
+<!--
+  result.html – Prediction result display page.
+
+  Flask injection points (passed via render_template from app.py):
+    • {{ prediction }}   – "Fraudulent" | "Legitimate"  (string)
+    • {{ probability }}  – e.g. 0.9712  (float, formatted below as %)
+    • {{ amount }}       – original transaction amount for context
+    • {{ label_class }}  – "result--fraud" | "result--safe"
+                           (set in app.py based on prediction so the CSS
+                            can colour the card red or green)
+-->
+<section class="page-header">
+  <h1>Prediction Result</h1>
+</section>
+
+<section class="result">
+  <div class="result__card {{ label_class | default('') }}">
+
+    <p class="result__label">
+      <!--
+        Jinja2 conditional: render a warning badge for fraud,
+        a checkmark badge for legitimate transactions.
+      -->
+      {% if prediction == "Fraudulent" %}
+        <span class="badge badge--danger">Fraudulent</span>
+      {% elif prediction == "Legitimate" %}
+        <span class="badge badge--success">Legitimate</span>
+      {% else %}
+        <span class="badge badge--neutral">Unknown</span>
+      {% endif %}
+    </p>
+
+    <p class="result__probability">
+      Confidence:
+      <!--
+        "probability" arrives as a float (0–1).
+        Jinja2's built-in "round" filter and multiplication format it as a %.
+      -->
+      <strong>{{ (probability * 100) | round(2) }}%</strong>
+    </p>
+
+    {% if amount %}
+    <p class="result__amount">
+      Transaction Amount: <strong>${{ amount }}</strong>
+    </p>
+    {% endif %}
+
+  </div>
+
+  <div class="result__actions">
+    <a href="{{ url_for('predict') }}" class="btn btn--secondary">
+      Analyse Another Transaction
+    </a>
+    <a href="{{ url_for('index') }}" class="btn btn--ghost">
+      Back to Home
+    </a>
+  </div>
+</section>
+{% endblock %}

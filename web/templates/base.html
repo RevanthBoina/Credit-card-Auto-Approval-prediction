@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!--
+    Flask variable: {{ title }} is injected by each child template via
+      {% block title %}Page Name{% endblock %}.
+    Fallback: "Credit Card App".
+  -->
+  <title>{% block title %}Credit Card App{% endblock %}</title>
+
+  <!-- Shared stylesheet -->
+  <!--
+    url_for('static', ...) is a Flask helper that resolves the correct
+    path to the static/ directory regardless of where Flask is deployed.
+  -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}" />
+
+  <!-- Per-page extra styles -->
+  {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+  <!-- ===================== NAVIGATION ===================== -->
+  <nav class="navbar">
+    <div class="navbar__brand">
+      <a href="{{ url_for('index') }}">CreditCard</a>
+    </div>
+    <ul class="navbar__links">
+      <li><a href="{{ url_for('index') }}">Home</a></li>
+      <li><a href="{{ url_for('predict') }}">Predict</a></li>
+      <li><a href="{{ url_for('about') }}">About</a></li>
+    </ul>
+  </nav>
+
+  <!-- ===================== FLASH MESSAGES ===================== -->
+  <!--
+    Flask's flash() system sends one-time messages (success / error).
+    get_flashed_messages(with_categories=True) returns [(category, message), ...].
+  -->
+  {% with messages = get_flashed_messages(with_categories=True) %}
+    {% if messages %}
+      <div class="flash-container">
+        {% for category, message in messages %}
+          <div class="flash flash--{{ category }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- ===================== MAIN CONTENT ===================== -->
+  <main class="main-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- ===================== FOOTER ===================== -->
+  <footer class="footer">
+    <p>&copy; 2026 CreditCard App. All rights reserved.</p>
+  </footer>
+
+  <!-- Shared JS -->
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+  <!-- Per-page extra scripts -->
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

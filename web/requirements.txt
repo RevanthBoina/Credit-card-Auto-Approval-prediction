@@ -1,0 +1,17 @@
+# Web framework
+Flask==3.0.3
+
+# Form handling & CSRF protection (add when forms are wired up)
+Flask-WTF==1.2.1
+WTForms==3.1.2
+
+# Machine-learning stack (add when model integration begins)
+scikit-learn==1.5.0
+pandas==2.2.2
+numpy==1.26.4
+
+# Model serialisation
+joblib==1.4.2
+
+# Environment variable management
+python-dotenv==1.0.1

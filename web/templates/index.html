@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Home – Credit Card App{% endblock %}
+
+{% block content %}
+<!--
+  index.html – Landing / home page.
+  No Flask variables are needed here yet; this is purely static markup.
+  When dynamic content is required (e.g. a logged-in username), add
+  {{ current_user.name }} or similar Jinja2 expressions.
+-->
+<section class="hero">
+  <div class="hero__content">
+    <h1 class="hero__title">Credit Card Fraud Detection</h1>
+    <p class="hero__subtitle">
+      Instantly analyse a transaction and find out whether it is likely
+      to be fraudulent using our machine-learning model.
+    </p>
+    <a href="{{ url_for('predict') }}" class="btn btn--primary">
+      Run a Prediction
+    </a>
+  </div>
+</section>
+
+<section class="features">
+  <div class="features__grid">
+    <div class="features__card">
+      <h2>Fast</h2>
+      <p>Results in milliseconds powered by a trained scikit-learn pipeline.</p>
+    </div>
+    <div class="features__card">
+      <h2>Accurate</h2>
+      <p>Trained on real-world anonymised transaction data.</p>
+    </div>
+    <div class="features__card">
+      <h2>Transparent</h2>
+      <p>Probability scores give you full confidence context.</p>
+    </div>
+  </div>
+</section>
+{% endblock %}
