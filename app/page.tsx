@@ -21,10 +21,12 @@ const features = [
 ]
 
 const steps = [
-  'Fill in your financial details on the prediction form.',
-  'Our ML model evaluates over 15 applicant features.',
-  'Receive an instant Approved or Rejected prediction.',
+  { title: 'Enter Details', desc: 'Fill in your personal, employment, and financial information.' },
+  { title: 'Model Evaluates', desc: 'Our ML model evaluates over 15 applicant features instantly.' },
+  { title: 'Get Your Result', desc: 'Receive an Approved or Rejected prediction with a confidence score.' },
 ]
+
+const badges = ['No signup required', 'Instant results', '100% free']
 
 export default function Home() {
   return (
@@ -32,29 +34,29 @@ export default function Home() {
       <Navbar />
       <main>
         {/* Hero */}
-        <section className="mx-auto max-w-6xl px-6 py-24 text-center">
+        <section className="mx-auto max-w-6xl px-4 py-16 text-center sm:px-6 sm:py-24">
           <span className="inline-block rounded-full border border-primary/30 bg-primary/10 px-4 py-1 text-sm font-medium text-primary">
             ML-Powered Prediction
           </span>
-          <h1 className="mt-6 text-balance text-5xl font-bold leading-tight tracking-tight text-foreground sm:text-6xl">
+          <h1 className="mt-6 text-balance text-4xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl lg:text-6xl">
             Know Your Credit Card
-            <br />
-            <span className="text-primary">Approval Chances</span>
+            <br className="hidden sm:block" />
+            <span className="text-primary"> Approval Chances</span>
           </h1>
-          <p className="mx-auto mt-6 max-w-xl text-pretty text-lg leading-relaxed text-muted-foreground">
+          <p className="mx-auto mt-5 max-w-xl text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
             Instantly predict whether your credit card application will be approved or rejected using
             our machine learning model trained on real applicant data.
           </p>
-          <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
             <Link
               href="/predict"
-              className="flex items-center gap-2 rounded-lg bg-primary px-7 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+              className="flex items-center justify-center gap-2 rounded-lg bg-primary px-7 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
             >
               Check My Eligibility <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               href="/about"
-              className="rounded-lg border border-border px-7 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
+              className="flex items-center justify-center rounded-lg border border-border px-7 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
             >
               How It Works
             </Link>
@@ -63,16 +65,18 @@ export default function Home() {
 
         {/* Features */}
         <section className="border-t border-border bg-card">
-          <div className="mx-auto max-w-6xl px-6 py-20">
-            <h2 className="text-center text-3xl font-bold text-foreground">Why Use CardApprove AI?</h2>
-            <p className="mx-auto mt-3 max-w-lg text-center text-muted-foreground">
+          <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
+            <h2 className="text-center text-2xl font-bold text-foreground sm:text-3xl">
+              Why Use CardApprove AI?
+            </h2>
+            <p className="mx-auto mt-3 max-w-lg text-center text-sm text-muted-foreground sm:text-base">
               A fast, reliable, and privacy-first tool for understanding your credit card eligibility.
             </p>
-            <div className="mt-12 grid gap-6 sm:grid-cols-3">
+            <div className="mt-10 grid gap-5 sm:grid-cols-3">
               {features.map(({ icon: Icon, title, description }) => (
                 <div
                   key={title}
-                  className="rounded-xl border border-border bg-background p-6"
+                  className="rounded-xl border border-border bg-background p-6 transition-shadow hover:shadow-md"
                 >
                   <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10">
                     <Icon className="h-5 w-5 text-primary" />
@@ -86,15 +90,16 @@ export default function Home() {
         </section>
 
         {/* Steps */}
-        <section className="mx-auto max-w-6xl px-6 py-20">
-          <h2 className="text-center text-3xl font-bold text-foreground">How It Works</h2>
-          <div className="mt-12 flex flex-col items-start gap-6 sm:flex-row sm:justify-center">
+        <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
+          <h2 className="text-center text-2xl font-bold text-foreground sm:text-3xl">How It Works</h2>
+          <div className="mt-10 grid gap-5 sm:grid-cols-3">
             {steps.map((step, i) => (
-              <div key={i} className="flex flex-1 flex-col gap-3 rounded-xl border border-border bg-card p-6">
+              <div key={i} className="flex flex-col gap-3 rounded-xl border border-border bg-card p-6">
                 <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
                   {i + 1}
                 </div>
-                <p className="text-sm leading-relaxed text-muted-foreground">{step}</p>
+                <h3 className="font-semibold text-foreground">{step.title}</h3>
+                <p className="text-sm leading-relaxed text-muted-foreground">{step.desc}</p>
               </div>
             ))}
           </div>
@@ -102,15 +107,15 @@ export default function Home() {
 
         {/* CTA */}
         <section className="border-t border-border bg-card">
-          <div className="mx-auto max-w-6xl px-6 py-20 text-center">
-            <h2 className="text-3xl font-bold text-foreground">Ready to find out?</h2>
-            <p className="mx-auto mt-3 max-w-md text-muted-foreground">
+          <div className="mx-auto max-w-6xl px-4 py-16 text-center sm:px-6 sm:py-20">
+            <h2 className="text-2xl font-bold text-foreground sm:text-3xl">Ready to find out?</h2>
+            <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground sm:text-base">
               It only takes a minute to enter your details and get an instant prediction.
             </p>
-            <div className="mt-4 flex justify-center gap-2">
-              {['No signup required', 'Instant results', '100% free'].map((t) => (
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+              {badges.map((t) => (
                 <span key={t} className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-primary" /> {t}
+                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-primary" /> {t}
                 </span>
               ))}
             </div>
@@ -124,7 +129,7 @@ export default function Home() {
         </section>
       </main>
 
-      <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
+      <footer className="border-t border-border px-4 py-6 text-center text-xs text-muted-foreground">
         &copy; {new Date().getFullYear()} CardApprove AI &mdash; Credit Card Auto-Approval Prediction
       </footer>
     </>

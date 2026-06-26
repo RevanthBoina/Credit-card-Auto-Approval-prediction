@@ -23,31 +23,38 @@ interface Field {
   options?: string[]
   placeholder?: string
   min?: number
+  section: string
 }
 
 const fields: Field[] = [
-  { name: 'gender', label: 'Gender', type: 'select', options: genderOptions },
-  { name: 'own_car', label: 'Owns a Car?', type: 'select', options: boolOptions },
-  { name: 'own_realty', label: 'Owns Real Estate?', type: 'select', options: boolOptions },
-  { name: 'num_children', label: 'Number of Children', type: 'number', placeholder: '0', min: 0 },
-  { name: 'annual_income', label: 'Annual Income ($)', type: 'number', placeholder: '50000', min: 0 },
-  { name: 'income_type', label: 'Income Type', type: 'select', options: incomeOptions },
-  { name: 'education', label: 'Education Level', type: 'select', options: educationOptions },
-  { name: 'family_status', label: 'Family Status', type: 'select', options: ['Married', 'Single / not married', 'Civil marriage', 'Separated', 'Widow'] },
-  { name: 'housing_type', label: 'Housing Type', type: 'select', options: housingOptions },
-  { name: 'age', label: 'Age (years)', type: 'number', placeholder: '35', min: 18 },
-  { name: 'employment_years', label: 'Years Employed', type: 'number', placeholder: '5', min: 0 },
-  { name: 'mobile', label: 'Has Mobile Phone?', type: 'select', options: boolOptions },
-  { name: 'work_phone', label: 'Has Work Phone?', type: 'select', options: boolOptions },
-  { name: 'phone', label: 'Has Home Phone?', type: 'select', options: boolOptions },
-  { name: 'email', label: 'Has Email?', type: 'select', options: boolOptions },
-  { name: 'occupation', label: 'Occupation', type: 'select', options: occupationOptions },
-  { name: 'family_members', label: 'Family Members', type: 'number', placeholder: '2', min: 1 },
+  // Personal
+  { section: 'Personal Details', name: 'gender', label: 'Gender', type: 'select', options: genderOptions },
+  { section: 'Personal Details', name: 'age', label: 'Age (years)', type: 'number', placeholder: '35', min: 18 },
+  { section: 'Personal Details', name: 'family_status', label: 'Family Status', type: 'select', options: ['Married', 'Single / not married', 'Civil marriage', 'Separated', 'Widow'] },
+  { section: 'Personal Details', name: 'num_children', label: 'Number of Children', type: 'number', placeholder: '0', min: 0 },
+  { section: 'Personal Details', name: 'family_members', label: 'Family Members', type: 'number', placeholder: '2', min: 1 },
+  // Assets
+  { section: 'Assets', name: 'own_car', label: 'Owns a Car?', type: 'select', options: boolOptions },
+  { section: 'Assets', name: 'own_realty', label: 'Owns Real Estate?', type: 'select', options: boolOptions },
+  { section: 'Assets', name: 'housing_type', label: 'Housing Type', type: 'select', options: housingOptions },
+  // Employment
+  { section: 'Employment', name: 'income_type', label: 'Income Type', type: 'select', options: incomeOptions },
+  { section: 'Employment', name: 'occupation', label: 'Occupation', type: 'select', options: occupationOptions },
+  { section: 'Employment', name: 'employment_years', label: 'Years Employed', type: 'number', placeholder: '5', min: 0 },
+  { section: 'Employment', name: 'education', label: 'Education Level', type: 'select', options: educationOptions },
+  // Financial
+  { section: 'Financial', name: 'annual_income', label: 'Annual Income ($)', type: 'number', placeholder: '50000', min: 0 },
+  // Contact
+  { section: 'Contact', name: 'mobile', label: 'Has Mobile Phone?', type: 'select', options: boolOptions },
+  { section: 'Contact', name: 'work_phone', label: 'Has Work Phone?', type: 'select', options: boolOptions },
+  { section: 'Contact', name: 'phone', label: 'Has Home Phone?', type: 'select', options: boolOptions },
+  { section: 'Contact', name: 'email', label: 'Has Email?', type: 'select', options: boolOptions },
 ]
+
+const sections = ['Personal Details', 'Assets', 'Employment', 'Financial', 'Contact']
 
 type FormData = Record<string, string>
 
-// Simple rule-based mock prediction (replace with real API call when model is deployed)
 function mockPredict(data: FormData): { approved: boolean; probability: number } {
   let score = 0
   const income = parseFloat(data.annual_income) || 0
@@ -56,7 +63,6 @@ function mockPredict(data: FormData): { approved: boolean; probability: number }
 
   if (income > 80000) score += 3
   else if (income > 40000) score += 2
-  else score += 0
 
   if (age >= 25 && age <= 55) score += 2
   else score += 1
@@ -114,58 +120,67 @@ export default function PredictForm() {
     }, 1200)
   }
 
+  const inputBase =
+    'w-full rounded-md border bg-background px-3 py-2.5 text-sm text-foreground outline-none transition focus:ring-2 focus:ring-primary'
+
   return (
-    <form onSubmit={handleSubmit} noValidate className="rounded-xl border border-border bg-card p-8 shadow-sm">
-      <div className="grid gap-5 sm:grid-cols-2">
-        {fields.map(({ name, label, type, options, placeholder, min }) => (
-          <div key={name} className="flex flex-col gap-1.5">
-            <label htmlFor={name} className="text-sm font-medium text-foreground">
-              {label}
-            </label>
-            {type === 'select' ? (
-              <select
-                id={name}
-                value={form[name] ?? ''}
-                onChange={(e) => handleChange(name, e.target.value)}
-                className={`rounded-md border bg-background px-3 py-2.5 text-sm text-foreground outline-none transition focus:ring-2 focus:ring-primary ${
-                  errors[name] ? 'border-destructive' : 'border-input'
-                }`}
-              >
-                <option value="">Select…</option>
-                {options!.map((o) => (
-                  <option key={o} value={o}>
-                    {o}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input
-                id={name}
-                type="number"
-                min={min}
-                placeholder={placeholder}
-                value={form[name] ?? ''}
-                onChange={(e) => handleChange(name, e.target.value)}
-                className={`rounded-md border bg-background px-3 py-2.5 text-sm text-foreground outline-none transition focus:ring-2 focus:ring-primary ${
-                  errors[name] ? 'border-destructive' : 'border-input'
-                }`}
-              />
-            )}
-            {errors[name] && (
-              <span className="text-xs text-destructive">{errors[name]}</span>
-            )}
+    <form onSubmit={handleSubmit} noValidate className="space-y-8">
+      {sections.map((section) => {
+        const sectionFields = fields.filter((f) => f.section === section)
+        return (
+          <div key={section} className="rounded-xl border border-border bg-card p-5 sm:p-6">
+            <h2 className="mb-5 text-sm font-semibold uppercase tracking-wide text-primary">
+              {section}
+            </h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {sectionFields.map(({ name, label, type, options, placeholder, min }) => (
+                <div key={name} className="flex flex-col gap-1.5">
+                  <label htmlFor={name} className="text-sm font-medium text-foreground">
+                    {label}
+                  </label>
+                  {type === 'select' ? (
+                    <select
+                      id={name}
+                      value={form[name] ?? ''}
+                      onChange={(e) => handleChange(name, e.target.value)}
+                      className={`${inputBase} ${errors[name] ? 'border-destructive' : 'border-input'}`}
+                    >
+                      <option value="">Select...</option>
+                      {options!.map((o) => (
+                        <option key={o} value={o}>
+                          {o}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      id={name}
+                      type="number"
+                      min={min}
+                      placeholder={placeholder}
+                      value={form[name] ?? ''}
+                      onChange={(e) => handleChange(name, e.target.value)}
+                      className={`${inputBase} ${errors[name] ? 'border-destructive' : 'border-input'}`}
+                    />
+                  )}
+                  {errors[name] && (
+                    <span className="text-xs text-destructive">{errors[name]}</span>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-        ))}
-      </div>
+        )
+      })}
 
       <button
         type="submit"
         disabled={loading}
-        className="mt-8 flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
+        className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
       >
         {loading ? (
           <>
-            <Loader2 className="h-4 w-4 animate-spin" /> Predicting…
+            <Loader2 className="h-4 w-4 animate-spin" /> Analyzing your application...
           </>
         ) : (
           'Predict My Approval'
