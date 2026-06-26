@@ -6,9 +6,22 @@ import { Loader2 } from 'lucide-react'
 
 const genderOptions = ['Male', 'Female']
 const boolOptions = ['Yes', 'No']
-const educationOptions = ['Higher education', 'Secondary / secondary special', 'Incomplete higher', 'Lower secondary', 'Academic degree']
+const educationOptions = [
+  'Higher education',
+  'Secondary / secondary special',
+  'Incomplete higher',
+  'Lower secondary',
+  'Academic degree',
+]
 const incomeOptions = ['Working', 'Commercial associate', 'Pensioner', 'State servant', 'Student']
-const housingOptions = ['House / apartment', 'With parents', 'Municipal apartment', 'Rented apartment', 'Office apartment', 'Co-op apartment']
+const housingOptions = [
+  'House / apartment',
+  'With parents',
+  'Municipal apartment',
+  'Rented apartment',
+  'Office apartment',
+  'Co-op apartment',
+]
 const occupationOptions = [
   'Laborers', 'Core staff', 'Accountants', 'Managers', 'Drivers', 'Sales staff',
   'Cleaning staff', 'Cooking staff', 'Private service staff', 'Medicine staff',
@@ -23,35 +36,97 @@ interface Field {
   options?: string[]
   placeholder?: string
   min?: number
+  helper?: string
   section: string
+  required?: boolean
 }
 
 const fields: Field[] = [
   // Personal
-  { section: 'Personal Details', name: 'gender', label: 'Gender', type: 'select', options: genderOptions },
-  { section: 'Personal Details', name: 'age', label: 'Age (years)', type: 'number', placeholder: '35', min: 18 },
-  { section: 'Personal Details', name: 'family_status', label: 'Family Status', type: 'select', options: ['Married', 'Single / not married', 'Civil marriage', 'Separated', 'Widow'] },
-  { section: 'Personal Details', name: 'num_children', label: 'Number of Children', type: 'number', placeholder: '0', min: 0 },
-  { section: 'Personal Details', name: 'family_members', label: 'Family Members', type: 'number', placeholder: '2', min: 1 },
+  {
+    section: 'Personal Details', name: 'gender', label: 'Gender', type: 'select',
+    options: genderOptions, required: true,
+  },
+  {
+    section: 'Personal Details', name: 'age', label: 'Age', type: 'number',
+    placeholder: '35', min: 18, required: true,
+    helper: 'Applicant age in years. Must be 18 or older.',
+  },
+  {
+    section: 'Personal Details', name: 'family_status', label: 'Family Status', type: 'select',
+    options: ['Married', 'Single / not married', 'Civil marriage', 'Separated', 'Widow'],
+    required: true,
+  },
+  {
+    section: 'Personal Details', name: 'num_children', label: 'Number of Children', type: 'number',
+    placeholder: '0', min: 0, required: true,
+    helper: 'Total number of dependent children.',
+  },
+  {
+    section: 'Personal Details', name: 'family_members', label: 'Family Members', type: 'number',
+    placeholder: '2', min: 1, required: true,
+    helper: 'Total number of people in the household including the applicant.',
+  },
   // Assets
-  { section: 'Assets', name: 'own_car', label: 'Owns a Car?', type: 'select', options: boolOptions },
-  { section: 'Assets', name: 'own_realty', label: 'Owns Real Estate?', type: 'select', options: boolOptions },
-  { section: 'Assets', name: 'housing_type', label: 'Housing Type', type: 'select', options: housingOptions },
+  {
+    section: 'Assets', name: 'own_car', label: 'Owns a Car?', type: 'select',
+    options: boolOptions, required: true,
+    helper: 'Whether the applicant owns a private vehicle.',
+  },
+  {
+    section: 'Assets', name: 'own_realty', label: 'Owns Real Estate?', type: 'select',
+    options: boolOptions, required: true,
+    helper: 'Whether the applicant owns property or land.',
+  },
+  {
+    section: 'Assets', name: 'housing_type', label: 'Housing Type', type: 'select',
+    options: housingOptions, required: true,
+  },
   // Employment
-  { section: 'Employment', name: 'income_type', label: 'Income Type', type: 'select', options: incomeOptions },
-  { section: 'Employment', name: 'occupation', label: 'Occupation', type: 'select', options: occupationOptions },
-  { section: 'Employment', name: 'employment_years', label: 'Years Employed', type: 'number', placeholder: '5', min: 0 },
-  { section: 'Employment', name: 'education', label: 'Education Level', type: 'select', options: educationOptions },
+  {
+    section: 'Employment', name: 'income_type', label: 'Income Type', type: 'select',
+    options: incomeOptions, required: true,
+    helper: 'Source of the applicant\'s primary income.',
+  },
+  {
+    section: 'Employment', name: 'occupation', label: 'Occupation', type: 'select',
+    options: occupationOptions, required: true,
+  },
+  {
+    section: 'Employment', name: 'employment_years', label: 'Years Employed', type: 'number',
+    placeholder: '5', min: 0, required: true,
+    helper: 'Total years at current or most recent employer. Enter 0 if unemployed.',
+  },
+  {
+    section: 'Employment', name: 'education', label: 'Education Level', type: 'select',
+    options: educationOptions, required: true,
+  },
   // Financial
-  { section: 'Financial', name: 'annual_income', label: 'Annual Income ($)', type: 'number', placeholder: '50000', min: 0 },
+  {
+    section: 'Financial', name: 'annual_income', label: 'Annual Income (USD)', type: 'number',
+    placeholder: '50000', min: 0, required: true,
+    helper: 'Total gross annual income before tax, in US dollars.',
+  },
   // Contact
-  { section: 'Contact', name: 'mobile', label: 'Has Mobile Phone?', type: 'select', options: boolOptions },
-  { section: 'Contact', name: 'work_phone', label: 'Has Work Phone?', type: 'select', options: boolOptions },
-  { section: 'Contact', name: 'phone', label: 'Has Home Phone?', type: 'select', options: boolOptions },
-  { section: 'Contact', name: 'email', label: 'Has Email?', type: 'select', options: boolOptions },
+  {
+    section: 'Contact Details', name: 'mobile', label: 'Has Mobile Phone?', type: 'select',
+    options: boolOptions, required: true,
+  },
+  {
+    section: 'Contact Details', name: 'work_phone', label: 'Has Work Phone?', type: 'select',
+    options: boolOptions, required: true,
+  },
+  {
+    section: 'Contact Details', name: 'phone', label: 'Has Home Phone?', type: 'select',
+    options: boolOptions, required: true,
+  },
+  {
+    section: 'Contact Details', name: 'email', label: 'Has Email Address?', type: 'select',
+    options: boolOptions, required: true,
+  },
 ]
 
-const sections = ['Personal Details', 'Assets', 'Employment', 'Financial', 'Contact']
+const sections = ['Personal Details', 'Assets', 'Employment', 'Financial', 'Contact Details']
 
 type FormData = Record<string, string>
 
@@ -88,12 +163,16 @@ export default function PredictForm() {
 
   function validate(): boolean {
     const newErrors: Record<string, string> = {}
-    fields.forEach(({ name, label, type }) => {
+    fields.forEach(({ name, label, type, min }) => {
       const val = form[name]
       if (!val || val.trim() === '') {
         newErrors[name] = `${label} is required.`
-      } else if (type === 'number' && isNaN(Number(val))) {
-        newErrors[name] = `${label} must be a number.`
+      } else if (type === 'number') {
+        if (isNaN(Number(val))) {
+          newErrors[name] = `${label} must be a valid number.`
+        } else if (min !== undefined && Number(val) < min) {
+          newErrors[name] = `${label} must be at least ${min}.`
+        }
       }
     })
     setErrors(newErrors)
@@ -107,7 +186,11 @@ export default function PredictForm() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!validate()) return
+    if (!validate()) {
+      const firstError = document.querySelector('[data-field-error]')
+      firstError?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return
+    }
     setLoading(true)
     setTimeout(() => {
       const result = mockPredict(form)
@@ -117,39 +200,53 @@ export default function PredictForm() {
         income: form.annual_income,
       })
       router.push(`/result?${params.toString()}`)
-    }, 1200)
+    }, 1400)
   }
 
   const inputBase =
     'w-full rounded-md border bg-background px-3 py-2.5 text-sm text-foreground outline-none transition focus:ring-2 focus:ring-primary'
 
+  const errorCount = Object.values(errors).filter(Boolean).length
+
   return (
-    <form onSubmit={handleSubmit} noValidate className="space-y-8">
+    <form onSubmit={handleSubmit} noValidate className="space-y-6">
+
+      {/* Form-level error summary */}
+      {errorCount > 0 && (
+        <div className="rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          Please fix {errorCount} field{errorCount > 1 ? 's' : ''} before submitting.
+        </div>
+      )}
+
       {sections.map((section) => {
         const sectionFields = fields.filter((f) => f.section === section)
         return (
           <div key={section} className="rounded-xl border border-border bg-card p-5 sm:p-6">
-            <h2 className="mb-5 text-sm font-semibold uppercase tracking-wide text-primary">
+            <h2 className="mb-5 text-xs font-semibold uppercase tracking-widest text-primary">
               {section}
             </h2>
-            <div className="grid gap-4 sm:grid-cols-2">
-              {sectionFields.map(({ name, label, type, options, placeholder, min }) => (
-                <div key={name} className="flex flex-col gap-1.5">
-                  <label htmlFor={name} className="text-sm font-medium text-foreground">
+            <div className="grid gap-5 sm:grid-cols-2">
+              {sectionFields.map(({ name, label, type, options, placeholder, min, helper, required }) => (
+                <div key={name} className="flex flex-col gap-1">
+                  <label htmlFor={name} className="flex items-center gap-1 text-sm font-medium text-foreground">
                     {label}
+                    {required && <span className="text-destructive" aria-hidden="true">*</span>}
                   </label>
+                  {helper && (
+                    <p className="text-xs text-muted-foreground">{helper}</p>
+                  )}
                   {type === 'select' ? (
                     <select
                       id={name}
                       value={form[name] ?? ''}
                       onChange={(e) => handleChange(name, e.target.value)}
-                      className={`${inputBase} ${errors[name] ? 'border-destructive' : 'border-input'}`}
+                      aria-invalid={!!errors[name]}
+                      aria-describedby={errors[name] ? `${name}-error` : undefined}
+                      className={`${inputBase} ${errors[name] ? 'border-destructive focus:ring-destructive' : 'border-input'}`}
                     >
                       <option value="">Select...</option>
                       {options!.map((o) => (
-                        <option key={o} value={o}>
-                          {o}
-                        </option>
+                        <option key={o} value={o}>{o}</option>
                       ))}
                     </select>
                   ) : (
@@ -160,11 +257,20 @@ export default function PredictForm() {
                       placeholder={placeholder}
                       value={form[name] ?? ''}
                       onChange={(e) => handleChange(name, e.target.value)}
-                      className={`${inputBase} ${errors[name] ? 'border-destructive' : 'border-input'}`}
+                      aria-invalid={!!errors[name]}
+                      aria-describedby={errors[name] ? `${name}-error` : undefined}
+                      className={`${inputBase} ${errors[name] ? 'border-destructive focus:ring-destructive' : 'border-input'}`}
                     />
                   )}
                   {errors[name] && (
-                    <span className="text-xs text-destructive">{errors[name]}</span>
+                    <span
+                      id={`${name}-error`}
+                      role="alert"
+                      data-field-error
+                      className="text-xs text-destructive"
+                    >
+                      {errors[name]}
+                    </span>
                   )}
                 </div>
               ))}
@@ -173,17 +279,22 @@ export default function PredictForm() {
         )
       })}
 
+      <p className="text-xs text-muted-foreground">
+        Fields marked <span className="text-destructive font-medium">*</span> are required.
+        Input data is not stored after prediction.
+      </p>
+
       <button
         type="submit"
         disabled={loading}
-        className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
+        className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {loading ? (
           <>
-            <Loader2 className="h-4 w-4 animate-spin" /> Analyzing your application...
+            <Loader2 className="h-4 w-4 animate-spin" /> Processing application...
           </>
         ) : (
-          'Predict My Approval'
+          'Run Approval Prediction'
         )}
       </button>
     </form>
