@@ -3,21 +3,16 @@
 {% block title %}Predict – Credit Card App{% endblock %}
 
 {% block content %}
-<!--
-  predict.html – Transaction input form.
-
-  Flask injection points:
-    • action="{{ url_for('predict') }}" – POST target resolved by Flask.
-    • When validation errors exist, Flask will pass an `errors` dict so
-      individual fields can show inline messages:
-        {% if errors.amount %}<span class="error">{{ errors.amount }}</span>{% endif %}
-    • To repopulate fields after a failed submission, Flask passes a `form`
-      object: value="{{ form.amount or '' }}"
--->
 <section class="page-header">
   <h1>Run a Prediction</h1>
   <p>Enter the transaction details below.</p>
 </section>
+
+{% if model_error %}
+<div class="alert alert--error">
+  <strong>Model unavailable:</strong> {{ model_error }}
+</div>
+{% endif %}
 
 <section class="predict">
   <form
@@ -26,40 +21,17 @@
     action="{{ url_for('predict') }}"
     novalidate
   >
-    <!--
-      CSRF token – Flask-WTF injects this automatically once configured.
-      Uncomment when Flask-WTF is added:
-        {{ form.hidden_tag() }}
-    -->
-
-    <div class="form-group">
-      <label for="amount">Transaction Amount ($)</label>
-      <input
-        type="number"
-        id="amount"
-        name="amount"
-        class="form-control"
-        placeholder="e.g. 149.99"
-        step="0.01"
-        min="0"
-        required
-        value="{{ form.amount if form else '' }}"
-      />
-      <!-- Flask will populate this span when errors exist -->
-      {% if errors and errors.amount %}
-        <span class="form-error">{{ errors.amount }}</span>
-      {% endif %}
-    </div>
-
+    {# ---- Time ---- #}
     <div class="form-group">
       <label for="time">Time (seconds elapsed from first transaction)</label>
       <input
         type="number"
         id="time"
         name="time"
-        class="form-control"
+        class="form-control{% if errors and errors.time %} form-control--error{% endif %}"
         placeholder="e.g. 3600"
         min="0"
+        step="any"
         required
         value="{{ form.time if form else '' }}"
       />
@@ -68,26 +40,47 @@
       {% endif %}
     </div>
 
-    <!--
-      PCA features V1–V28 (anonymised).
-      In production these fields will be generated dynamically via
-        {% for i in range(1, 29) %}
-      or hidden and pre-filled from upstream data.
-    -->
+    {# ---- V1–V28 (PCA anonymised features) ---- #}
+    {% set feature_cols = feature_columns if feature_columns else [] %}
+    {% for col in feature_cols %}
+      {% if col.startswith('V') %}
+        {% set field_name = col | lower %}
+        <div class="form-group">
+          <label for="{{ field_name }}">{{ col }} (PCA component)</label>
+          <input
+            type="number"
+            id="{{ field_name }}"
+            name="{{ field_name }}"
+            class="form-control{% if errors and errors[field_name] %} form-control--error{% endif %}"
+            placeholder="e.g. -1.3598"
+            step="any"
+            value="{{ form[field_name] if form else '' }}"
+          />
+          {% if errors and errors[field_name] %}
+            <span class="form-error">{{ errors[field_name] }}</span>
+          {% endif %}
+        </div>
+      {% endif %}
+    {% endfor %}
+
+    {# ---- Amount ---- #}
     <div class="form-group">
-      <label for="v1">V1 (PCA component)</label>
+      <label for="amount">Transaction Amount ($)</label>
       <input
         type="number"
-        id="v1"
-        name="v1"
-        class="form-control"
-        placeholder="e.g. -1.3598"
-        step="any"
-        value="{{ form.v1 if form else '' }}"
+        id="amount"
+        name="amount"
+        class="form-control{% if errors and errors.amount %} form-control--error{% endif %}"
+        placeholder="e.g. 149.99"
+        step="0.01"
+        min="0"
+        required
+        value="{{ form.amount if form else '' }}"
       />
+      {% if errors and errors.amount %}
+        <span class="form-error">{{ errors.amount }}</span>
+      {% endif %}
     </div>
-
-    <!-- Additional V2–V28 fields follow the same pattern (omitted for brevity) -->
 
     <button type="submit" class="btn btn--primary">Analyse Transaction</button>
   </form>

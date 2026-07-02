@@ -25,3 +25,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# model files (large binaries – regenerate from training notebook)
+*.pkl
+*.joblib
