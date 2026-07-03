@@ -130,29 +130,70 @@ const sections = ['Personal Details', 'Assets', 'Employment', 'Financial', 'Cont
 
 type FormData = Record<string, string>
 
-function mockPredict(data: FormData): { approved: boolean; probability: number } {
-  let score = 0
-  const income = parseFloat(data.annual_income) || 0
-  const age = parseFloat(data.age) || 0
-  const employed = parseFloat(data.employment_years) || 0
+/**
+ * Backend contract (POST /api/predict -> Flask POST /predict):
+ * {
+ *   gender, car_owner, property_owner, children, annual_income,
+ *   income_type, education_type, family_status, housing_type,
+ *   birthday_count, employed_days, mobile_phone, work_phone,
+ *   phone, email_id, occupation_type, family_members
+ * }
+ * See web/app.py for full validation rules.
+ */
+function toYesNoFlag(value: string): 0 | 1 {
+  return value === 'Yes' ? 1 : 0
+}
 
-  if (income > 80000) score += 3
-  else if (income > 40000) score += 2
+function buildPredictPayload(data: FormData) {
+  const age = Number(data.age)
+  const employmentYears = Number(data.employment_years)
 
-  if (age >= 25 && age <= 55) score += 2
-  else score += 1
+  return {
+    gender: data.gender,
+    car_owner: data.own_car,
+    property_owner: data.own_realty,
+    children: Number(data.num_children),
+    annual_income: Number(data.annual_income),
+    income_type: data.income_type,
+    education_type: data.education,
+    family_status: data.family_status,
+    housing_type: data.housing_type,
+    birthday_count: -age * 365.25,
+    employed_days: -employmentYears * 365.25,
+    mobile_phone: toYesNoFlag(data.mobile),
+    work_phone: toYesNoFlag(data.work_phone),
+    phone: toYesNoFlag(data.phone),
+    email_id: toYesNoFlag(data.email),
+    occupation_type: data.occupation,
+    family_members: Number(data.family_members),
+  }
+}
 
-  if (employed >= 3) score += 2
-  else if (employed >= 1) score += 1
+interface PredictApiResponse {
+  success: boolean
+  prediction?: number
+  prediction_label?: string
+  probability?: number
+  error?: string
+}
 
-  if (data.education === 'Higher education' || data.education === 'Academic degree') score += 2
-  if (data.own_realty === 'Yes') score += 1
-  if (data.own_car === 'Yes') score += 1
-  if (data.family_status === 'Married') score += 1
+async function runPrediction(data: FormData): Promise<{ approved: boolean; probability: number }> {
+  const response = await fetch('/api/predict', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(buildPredictPayload(data)),
+  })
 
-  const maxScore = 12
-  const probability = Math.min(Math.round((score / maxScore) * 100), 98)
-  return { approved: probability >= 55, probability }
+  const result: PredictApiResponse = await response.json()
+
+  if (!response.ok || !result.success) {
+    throw new Error(result.error ?? 'Prediction failed. Please try again.')
+  }
+
+  return {
+    approved: result.prediction === 1,
+    probability: Math.round((result.probability ?? 0) * 100),
+  }
 }
 
 export default function PredictForm() {
@@ -160,6 +201,7 @@ export default function PredictForm() {
   const [form, setForm] = useState<FormData>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   function validate(): boolean {
     const newErrors: Record<string, string> = {}
@@ -184,23 +226,27 @@ export default function PredictForm() {
     setErrors((prev) => ({ ...prev, [name]: '' }))
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    setSubmitError(null)
     if (!validate()) {
       const firstError = document.querySelector('[data-field-error]')
       firstError?.scrollIntoView({ behavior: 'smooth', block: 'center' })
       return
     }
     setLoading(true)
-    setTimeout(() => {
-      const result = mockPredict(form)
+    try {
+      const result = await runPrediction(form)
       const params = new URLSearchParams({
         approved: String(result.approved),
         probability: String(result.probability),
         income: form.annual_income,
       })
       router.push(`/result?${params.toString()}`)
-    }, 1400)
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Prediction failed. Please try again.')
+      setLoading(false)
+    }
   }
 
   const inputBase =
@@ -215,6 +261,13 @@ export default function PredictForm() {
       {errorCount > 0 && (
         <div className="rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
           Please fix {errorCount} field{errorCount > 1 ? 's' : ''} before submitting.
+        </div>
+      )}
+
+      {/* Backend/prediction error */}
+      {submitError && (
+        <div role="alert" className="rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          {submitError}
         </div>
       )}
 
