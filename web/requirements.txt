@@ -2,9 +2,10 @@
 Flask==3.0.3
 
 # Machine-learning stack
-# Must match (or be compatible with) the scikit-learn version the .pkl was trained with,
-# or joblib.load() will fail to unpickle internal sklearn classes.
-scikit-learn==1.7.2
+# Pinned to exactly match the scikit-learn version the .pkl was trained with
+# (confirmed via unpickle warnings: "... from version 1.6.1").
+# Any other version can fail to unpickle internal sklearn classes.
+scikit-learn==1.6.1
 xgboost
 imbalanced-learn
 pandas==2.2.2
