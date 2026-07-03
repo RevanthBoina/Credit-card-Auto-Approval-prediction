@@ -8,8 +8,8 @@ Routes:
     GET  /health    -> liveness + model-loaded check
     POST /predict   -> run inference, returns JSON prediction
 
-New Schema (14 fields):
-    Age, Debt, YearsEmployed, CreditScore, Gender, Married, BankCustomer,
+New Schema (13 fields - NO Credit Score):
+    Age, Debt, YearsEmployed, Gender, Married, BankCustomer,
     EducationLevel, Ethnicity, PriorDefault, Employed, DriversLicense,
     Citizen, Income
 
@@ -22,7 +22,6 @@ import logging
 import os
 
 import joblib
-import numpy as np
 import pandas as pd
 from flask import Flask, jsonify, request
 
@@ -64,7 +63,7 @@ def get_model():
 # Feature columns – must match the order used during training exactly.
 # ---------------------------------------------------------------------------
 FEATURE_COLUMNS = [
-    "Age", "Debt", "YearsEmployed", "CreditScore", "Gender", "Married",
+    "Age", "Debt", "YearsEmployed", "Gender", "Married",
     "BankCustomer", "EducationLevel", "Ethnicity", "PriorDefault",
     "Employed", "DriversLicense", "Citizen", "Income",
 ]
@@ -93,7 +92,6 @@ VALID_CITIZEN = {
 #     "Age": 35,
 #     "Debt": 5000,
 #     "YearsEmployed": 5,
-#     "CreditScore": 650,
 #     "Gender": "Male",
 #     "Married": "Yes",
 #     "BankCustomer": "Yes",
@@ -107,7 +105,7 @@ VALID_CITIZEN = {
 #   }
 # ---------------------------------------------------------------------------
 REQUIRED_FIELDS = [
-    "Age", "Debt", "YearsEmployed", "CreditScore", "Gender", "Married",
+    "Age", "Debt", "YearsEmployed", "Gender", "Married",
     "BankCustomer", "EducationLevel", "Ethnicity", "PriorDefault",
     "Employed", "DriversLicense", "Citizen", "Income",
 ]
@@ -148,7 +146,6 @@ def validate_and_transform(payload: dict) -> dict:
     row["Age"] = int(_require_number(payload["Age"], "Age"))
     row["Debt"] = _require_number(payload["Debt"], "Debt")
     row["YearsEmployed"] = _require_number(payload["YearsEmployed"], "YearsEmployed")
-    row["CreditScore"] = _require_number(payload["CreditScore"], "CreditScore")
     row["Income"] = _require_number(payload["Income"], "Income", allow_negative=False)
 
     # Categorical fields

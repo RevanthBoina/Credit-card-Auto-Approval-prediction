@@ -1,8 +1,8 @@
 """
 Training script for the Credit Card Approval model.
 
-Generates synthetic training data matching the new 14-field schema:
-    Age, Debt, YearsEmployed, CreditScore, Gender, Married, BankCustomer,
+Generates synthetic training data matching the new 13-field schema (NO Credit Score):
+    Age, Debt, YearsEmployed, Gender, Married, BankCustomer,
     EducationLevel, Ethnicity, PriorDefault, Employed, DriversLicense,
     Citizen, Income
 
@@ -48,7 +48,6 @@ def generate_synthetic_data(n_samples: int = 5000) -> pd.DataFrame:
     age = np.random.normal(40, 12, n_samples).clip(18, 80).astype(int)
     debt = np.random.exponential(5000, n_samples).clip(0, 50000)
     years_employed = np.random.exponential(5, n_samples).clip(0, 40)
-    credit_score = np.random.normal(650, 100, n_samples).clip(300, 850).astype(int)
     income = np.random.lognormal(10.5, 0.8, n_samples).clip(5000, 200000)
     
     # Categorical features
@@ -80,7 +79,6 @@ def generate_synthetic_data(n_samples: int = 5000) -> pd.DataFrame:
         "Age": age,
         "Debt": debt,
         "YearsEmployed": years_employed,
-        "CreditScore": credit_score,
         "Gender": gender,
         "Married": married,
         "BankCustomer": bank_customer,
@@ -100,21 +98,18 @@ def generate_labels(df: pd.DataFrame) -> np.ndarray:
     """
     Generate approval labels based on logical rules with forced balance.
     
-    Positive factors: high credit score, high income, employed, long tenure
-    Negative factors: prior default, high debt, no bank customer
+    Positive factors: high income, employed, long tenure, educated, bank customer
+    Negative factors: prior default, high debt, no employment
     """
     np.random.seed(42)
     scores = np.zeros(len(df))
     
-    # Credit Score contribution (most important)
-    scores += (df["CreditScore"] - 500) / 100
-    
-    # Income contribution
-    scores += np.log1p(df["Income"]) / 3
+    # Income contribution (most important)
+    scores += np.log1p(df["Income"]) / 2
     
     # Employment status
-    scores += (df["Employed"] == "Yes").astype(int) * 2.0
-    scores += df["YearsEmployed"] / 3
+    scores += (df["Employed"] == "Yes").astype(int) * 2.5
+    scores += df["YearsEmployed"] / 2
     
     # Age (mature applicants more stable)
     scores += ((df["Age"] - 25) / 8).clip(-1, 4)
@@ -161,7 +156,7 @@ def main():
     print(f"    Rejected: {len(y) - y.sum()} ({(1-y.mean())*100:.1f}%)")
     
     # Define feature types
-    numeric_features = ["Age", "Debt", "YearsEmployed", "CreditScore", "Income"]
+    numeric_features = ["Age", "Debt", "YearsEmployed", "Income"]
     categorical_features = [
         "Gender", "Married", "BankCustomer", "EducationLevel",
         "Ethnicity", "PriorDefault", "Employed", "DriversLicense", "Citizen"
