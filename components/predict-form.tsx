@@ -4,168 +4,153 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 
-const genderOptions = ['Male', 'Female']
+/**
+ * New 14-field schema for Credit Card Approval Prediction:
+ *   Age, Debt, YearsEmployed, CreditScore, Gender, Married, BankCustomer,
+ *   EducationLevel, Ethnicity, PriorDefault, Employed, DriversLicense,
+ *   Citizen, Income
+ */
+
 const boolOptions = ['Yes', 'No']
+const genderOptions = ['Male', 'Female']
 const educationOptions = [
-  'Higher education',
-  'Secondary / secondary special',
-  'Incomplete higher',
-  'Lower secondary',
-  'Academic degree',
+  { value: 'none', label: 'No Formal Education' },
+  { value: 'high_school', label: 'High School' },
+  { value: 'bachelors', label: "Bachelor's Degree" },
+  { value: 'masters', label: "Master's Degree" },
+  { value: 'phd', label: 'PhD / Doctorate' },
 ]
-const incomeOptions = ['Working', 'Commercial associate', 'Pensioner', 'State servant', 'Student']
-const housingOptions = [
-  'House / apartment',
-  'With parents',
-  'Municipal apartment',
-  'Rented apartment',
-  'Office apartment',
-  'Co-op apartment',
+const ethnicityOptions = [
+  { value: 'white', label: 'White' },
+  { value: 'black', label: 'Black' },
+  { value: 'asian', label: 'Asian' },
+  { value: 'latino', label: 'Latino / Hispanic' },
+  { value: 'other', label: 'Other' },
 ]
-const occupationOptions = [
-  'Laborers', 'Core staff', 'Accountants', 'Managers', 'Drivers', 'Sales staff',
-  'Cleaning staff', 'Cooking staff', 'Private service staff', 'Medicine staff',
-  'Security staff', 'High skill tech staff', 'Waiters/barmen staff', 'Low-skill Laborers',
-  'Realty agents', 'Secretaries', 'IT staff', 'HR staff',
+const citizenOptions = [
+  { value: 'by birth', label: 'Citizen by Birth' },
+  { value: 'by other means', label: 'Naturalized Citizen' },
+  { value: 'temporary', label: 'Temporary Resident' },
 ]
 
 interface Field {
   name: string
   label: string
   type: 'select' | 'number'
-  options?: string[]
+  options?: { value: string; label: string }[]
+  simpleOptions?: string[]
   placeholder?: string
   min?: number
+  max?: number
   helper?: string
   section: string
   required?: boolean
 }
 
 const fields: Field[] = [
-  // Personal
+  // Personal Information
   {
-    section: 'Personal Details', name: 'gender', label: 'Gender', type: 'select',
-    options: genderOptions, required: true,
+    section: 'Personal Information', name: 'Age', label: 'Age', type: 'number',
+    placeholder: '35', min: 18, max: 100, required: true,
+    helper: 'Applicant age in years (18-100).',
   },
   {
-    section: 'Personal Details', name: 'age', label: 'Age', type: 'number',
-    placeholder: '35', min: 18, required: true,
-    helper: 'Applicant age in years. Must be 18 or older.',
+    section: 'Personal Information', name: 'Gender', label: 'Gender', type: 'select',
+    simpleOptions: genderOptions, required: true,
   },
   {
-    section: 'Personal Details', name: 'family_status', label: 'Family Status', type: 'select',
-    options: ['Married', 'Single / not married', 'Civil marriage', 'Separated', 'Widow'],
-    required: true,
+    section: 'Personal Information', name: 'Married', label: 'Married?', type: 'select',
+    simpleOptions: boolOptions, required: true,
+    helper: 'Is the applicant currently married?',
   },
   {
-    section: 'Personal Details', name: 'num_children', label: 'Number of Children', type: 'number',
-    placeholder: '0', min: 0, required: true,
-    helper: 'Total number of dependent children.',
+    section: 'Personal Information', name: 'Ethnicity', label: 'Ethnicity', type: 'select',
+    options: ethnicityOptions, required: true,
+  },
+
+  // Financial Information
+  {
+    section: 'Financial Information', name: 'Income', label: 'Annual Income ($)', type: 'number',
+    placeholder: '50000', min: 0, required: true,
+    helper: 'Total annual income before taxes in dollars.',
   },
   {
-    section: 'Personal Details', name: 'family_members', label: 'Family Members', type: 'number',
-    placeholder: '2', min: 1, required: true,
-    helper: 'Total number of people in the household including the applicant.',
-  },
-  // Assets
-  {
-    section: 'Assets', name: 'own_car', label: 'Owns a Car?', type: 'select',
-    options: boolOptions, required: true,
-    helper: 'Whether the applicant owns a private vehicle.',
+    section: 'Financial Information', name: 'Debt', label: 'Current Debt ($)', type: 'number',
+    placeholder: '5000', min: 0, required: true,
+    helper: 'Total outstanding debt in dollars.',
   },
   {
-    section: 'Assets', name: 'own_realty', label: 'Owns Real Estate?', type: 'select',
-    options: boolOptions, required: true,
-    helper: 'Whether the applicant owns property or land.',
+    section: 'Financial Information', name: 'CreditScore', label: 'Credit Score', type: 'number',
+    placeholder: '650', min: 300, max: 850, required: true,
+    helper: 'Current credit score (300-850).',
   },
-  {
-    section: 'Assets', name: 'housing_type', label: 'Housing Type', type: 'select',
-    options: housingOptions, required: true,
-  },
+
   // Employment
   {
-    section: 'Employment', name: 'income_type', label: 'Income Type', type: 'select',
-    options: incomeOptions, required: true,
-    helper: 'Source of the applicant\'s primary income.',
+    section: 'Employment', name: 'Employed', label: 'Currently Employed?', type: 'select',
+    simpleOptions: boolOptions, required: true,
   },
   {
-    section: 'Employment', name: 'occupation', label: 'Occupation', type: 'select',
-    options: occupationOptions, required: true,
-  },
-  {
-    section: 'Employment', name: 'employment_years', label: 'Years Employed', type: 'number',
+    section: 'Employment', name: 'YearsEmployed', label: 'Years Employed', type: 'number',
     placeholder: '5', min: 0, required: true,
-    helper: 'Total years at current or most recent employer. Enter 0 if unemployed.',
+    helper: 'Total years at current employer (0 if unemployed).',
+  },
+
+  // Banking & History
+  {
+    section: 'Banking & History', name: 'BankCustomer', label: 'Existing Bank Customer?', type: 'select',
+    simpleOptions: boolOptions, required: true,
+    helper: 'Does the applicant already have an account with this bank?',
   },
   {
-    section: 'Employment', name: 'education', label: 'Education Level', type: 'select',
+    section: 'Banking & History', name: 'PriorDefault', label: 'Prior Default?', type: 'select',
+    simpleOptions: boolOptions, required: true,
+    helper: 'Has the applicant ever defaulted on a previous credit obligation?',
+  },
+
+  // Documents & Status
+  {
+    section: 'Documents & Status', name: 'EducationLevel', label: 'Education Level', type: 'select',
     options: educationOptions, required: true,
   },
-  // Financial
   {
-    section: 'Financial', name: 'annual_income', label: 'Annual Income (USD)', type: 'number',
-    placeholder: '50000', min: 0, required: true,
-    helper: 'Total gross annual income before tax, in US dollars.',
-  },
-  // Contact
-  {
-    section: 'Contact Details', name: 'mobile', label: 'Has Mobile Phone?', type: 'select',
-    options: boolOptions, required: true,
+    section: 'Documents & Status', name: 'DriversLicense', label: 'Has Driver\'s License?', type: 'select',
+    simpleOptions: boolOptions, required: true,
   },
   {
-    section: 'Contact Details', name: 'work_phone', label: 'Has Work Phone?', type: 'select',
-    options: boolOptions, required: true,
-  },
-  {
-    section: 'Contact Details', name: 'phone', label: 'Has Home Phone?', type: 'select',
-    options: boolOptions, required: true,
-  },
-  {
-    section: 'Contact Details', name: 'email', label: 'Has Email Address?', type: 'select',
-    options: boolOptions, required: true,
+    section: 'Documents & Status', name: 'Citizen', label: 'Citizenship Status', type: 'select',
+    options: citizenOptions, required: true,
   },
 ]
 
-const sections = ['Personal Details', 'Assets', 'Employment', 'Financial', 'Contact Details']
+const sections = ['Personal Information', 'Financial Information', 'Employment', 'Banking & History', 'Documents & Status']
 
 type FormData = Record<string, string>
 
 /**
  * Backend contract (POST /api/predict -> Flask POST /predict):
  * {
- *   gender, car_owner, property_owner, children, annual_income,
- *   income_type, education_type, family_status, housing_type,
- *   birthday_count, employed_days, mobile_phone, work_phone,
- *   phone, email_id, occupation_type, family_members
+ *   Age, Debt, YearsEmployed, CreditScore, Gender, Married, BankCustomer,
+ *   EducationLevel, Ethnicity, PriorDefault, Employed, DriversLicense,
+ *   Citizen, Income
  * }
- * See web/app.py for full validation rules.
  */
-function toYesNoFlag(value: string): 0 | 1 {
-  return value === 'Yes' ? 1 : 0
-}
-
 function buildPredictPayload(data: FormData) {
-  const age = Number(data.age)
-  const employmentYears = Number(data.employment_years)
-
   return {
-    gender: data.gender,
-    car_owner: data.own_car,
-    property_owner: data.own_realty,
-    children: Number(data.num_children),
-    annual_income: Number(data.annual_income),
-    income_type: data.income_type,
-    education_type: data.education,
-    family_status: data.family_status,
-    housing_type: data.housing_type,
-    birthday_count: -age * 365.25,
-    employed_days: -employmentYears * 365.25,
-    mobile_phone: toYesNoFlag(data.mobile),
-    work_phone: toYesNoFlag(data.work_phone),
-    phone: toYesNoFlag(data.phone),
-    email_id: toYesNoFlag(data.email),
-    occupation_type: data.occupation,
-    family_members: Number(data.family_members),
+    Age: Number(data.Age),
+    Debt: Number(data.Debt),
+    YearsEmployed: Number(data.YearsEmployed),
+    CreditScore: Number(data.CreditScore),
+    Gender: data.Gender,
+    Married: data.Married,
+    BankCustomer: data.BankCustomer,
+    EducationLevel: data.EducationLevel,
+    Ethnicity: data.Ethnicity,
+    PriorDefault: data.PriorDefault,
+    Employed: data.Employed,
+    DriversLicense: data.DriversLicense,
+    Citizen: data.Citizen,
+    Income: Number(data.Income),
   }
 }
 
@@ -205,15 +190,18 @@ export default function PredictForm() {
 
   function validate(): boolean {
     const newErrors: Record<string, string> = {}
-    fields.forEach(({ name, label, type, min }) => {
+    fields.forEach(({ name, label, type, min, max }) => {
       const val = form[name]
       if (!val || val.trim() === '') {
         newErrors[name] = `${label} is required.`
       } else if (type === 'number') {
-        if (isNaN(Number(val))) {
+        const numVal = Number(val)
+        if (isNaN(numVal)) {
           newErrors[name] = `${label} must be a valid number.`
-        } else if (min !== undefined && Number(val) < min) {
+        } else if (min !== undefined && numVal < min) {
           newErrors[name] = `${label} must be at least ${min}.`
+        } else if (max !== undefined && numVal > max) {
+          newErrors[name] = `${label} must be at most ${max}.`
         }
       }
     })
@@ -240,7 +228,6 @@ export default function PredictForm() {
       const params = new URLSearchParams({
         approved: String(result.approved),
         probability: String(result.probability),
-        income: form.annual_income,
       })
       router.push(`/result?${params.toString()}`)
     } catch (err) {
@@ -256,7 +243,6 @@ export default function PredictForm() {
 
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-6">
-
       {/* Form-level error summary */}
       {errorCount > 0 && (
         <div className="rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
@@ -279,7 +265,7 @@ export default function PredictForm() {
               {section}
             </h2>
             <div className="grid gap-5 sm:grid-cols-2">
-              {sectionFields.map(({ name, label, type, options, placeholder, min, helper, required }) => (
+              {sectionFields.map(({ name, label, type, options, simpleOptions, placeholder, min, max, helper, required }) => (
                 <div key={name} className="flex flex-col gap-1">
                   <label htmlFor={name} className="flex items-center gap-1 text-sm font-medium text-foreground">
                     {label}
@@ -298,7 +284,10 @@ export default function PredictForm() {
                       className={`${inputBase} ${errors[name] ? 'border-destructive focus:ring-destructive' : 'border-input'}`}
                     >
                       <option value="">Select...</option>
-                      {options!.map((o) => (
+                      {options?.map((o) => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                      {simpleOptions?.map((o) => (
                         <option key={o} value={o}>{o}</option>
                       ))}
                     </select>
@@ -307,6 +296,7 @@ export default function PredictForm() {
                       id={name}
                       type="number"
                       min={min}
+                      max={max}
                       placeholder={placeholder}
                       value={form[name] ?? ''}
                       onChange={(e) => handleChange(name, e.target.value)}

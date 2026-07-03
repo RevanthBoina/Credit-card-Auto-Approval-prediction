@@ -7,6 +7,11 @@ import { NextRequest, NextResponse } from 'next/server'
  * (same-origin, no CORS needed), and this route forwards the request
  * to FLASK_API_URL server-to-server.
  *
+ * New Schema (14 fields):
+ *   Age, Debt, YearsEmployed, CreditScore, Gender, Married, BankCustomer,
+ *   EducationLevel, Ethnicity, PriorDefault, Employed, DriversLicense,
+ *   Citizen, Income
+ *
  * Set FLASK_API_URL in .env.local, e.g.:
  *   FLASK_API_URL=http://127.0.0.1:8080
  */
