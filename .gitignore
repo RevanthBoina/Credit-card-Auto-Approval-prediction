@@ -29,3 +29,8 @@ next-env.d.ts
 # model files (large binaries – regenerate from training notebook)
 *.pkl
 *.joblib
+
+# python
+web/.venv/
+__pycache__/
+*.pyc
