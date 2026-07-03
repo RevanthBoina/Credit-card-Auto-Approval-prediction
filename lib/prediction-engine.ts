@@ -1,8 +1,8 @@
 /**
  * Client-side prediction engine for Credit Card Approval.
  * 
- * This replicates the logic from the Flask backend's training model.
- * Used as fallback when backend is unavailable.
+ * Uses calibrated sigmoid function to produce realistic probabilities.
+ * Score around threshold → ~50%, strong positive → 70-90%, strong negative → 10-30%
  * 
  * Schema (13 fields):
  *   Age, Debt, YearsEmployed, Gender, Married, BankCustomer,
@@ -33,33 +33,36 @@ export interface PredictionResult {
   score: number
 }
 
+// Sigmoid calibration constants
+const THRESHOLD = 14.0  // Score where probability = 50%
+const STEEPNESS = 0.5  // Lower = smoother spread of probabilities
+
 /**
- * Calculate approval score based on the same logic as the Flask training model.
- * Higher score = more likely to be approved.
+ * Calculate raw approval score from applicant data.
  */
 function calculateScore(data: PredictionInput): number {
   let score = 0
 
-  // Income contribution (most important) - log scale
+  // Income contribution (log scale, most important factor)
   score += Math.log1p(data.Income) / 2
 
-  // Employment status (+2.5 for employed)
-  score += data.Employed === 'Yes' ? 2.5 : 0
+  // Employment status
+  score += data.Employed === 'Yes' ? 2.5 : -1.0
   
   // Years employed
   score += data.YearsEmployed / 2
 
-  // Age (mature applicants more stable, clip between -1 and +4)
-  const ageScore = (data.Age - 25) / 8
-  score += Math.max(-1, Math.min(4, ageScore))
+  // Age (normalized, range roughly -1 to +4)
+  const ageNorm = (data.Age - 25) / 8
+  score += Math.max(-1, Math.min(4, ageNorm))
 
-  // Married (+0.8)
+  // Married
   score += data.Married === 'Yes' ? 0.8 : 0
 
-  // Bank customer (+1.5)
+  // Bank customer
   score += data.BankCustomer === 'Yes' ? 1.5 : 0
 
-  // Driver's license (+0.5)
+  // Driver's license
   score += data.DriversLicense === 'Yes' ? 0.5 : 0
 
   // Education level
@@ -72,23 +75,30 @@ function calculateScore(data: PredictionInput): number {
   }
   score += eduScores[data.EducationLevel] ?? 0
 
-  // Prior default (-4.0) - major negative factor
+  // Prior default - MAJOR negative factor
   score += data.PriorDefault === 'Yes' ? -4.0 : 0
 
-  // Debt (-debt/5000)
+  // Debt ratio (normalized to typical debt range)
   score -= data.Debt / 5000
 
   return score
 }
 
 /**
- * Convert score to probability using sigmoid function.
+ * Convert raw score to probability using calibrated sigmoid.
+ * 
+ * sigmoid(x) = 1 / (1 + e^(-k * (x - threshold)))
+ * 
+ * With threshold=14.0, steepness=0.5:
+ * - Score 14.0 → 50% probability
+ * - Score 18.0 → ~90% probability  
+ * - Score 10.0 → ~12% probability
+ * - Score 5.0 → ~5% probability (clamped)
  */
 function scoreToProbability(score: number): number {
-  // Sigmoid function: 1 / (1 + e^(-score))
-  // Shift score by threshold (~5) to get meaningful probabilities
-  const shiftedScore = score - 5
-  return 1 / (1 + Math.exp(-shiftedScore))
+  const sigmoid = 1 / (1 + Math.exp(-STEEPNESS * (score - THRESHOLD)))
+  // Clamp to reasonable range (5% - 95%)
+  return Math.max(0.05, Math.min(0.95, sigmoid))
 }
 
 /**
@@ -97,7 +107,7 @@ function scoreToProbability(score: number): number {
  */
 export function predict(input: PredictionInput): PredictionResult {
   const score = calculateScore(input)
-  const probability = Math.max(0.05, Math.min(0.99, scoreToProbability(score)))
+  const probability = scoreToProbability(score)
   
   // Approval threshold at 50% probability
   const approved = probability >= 0.5
@@ -111,29 +121,14 @@ export function predict(input: PredictionInput): PredictionResult {
 }
 
 /**
- * Example applicants for testing:
+ * Test predictions for various scenarios.
  */
-export const examples = {
-  highChance: {
-    Age: 35,
-    Income: 75000,
-    Debt: 5000,
-    YearsEmployed: 8,
-    Gender: 'Male',
-    Married: 'Yes',
-    BankCustomer: 'Yes',
-    EducationLevel: 'bachelors',
-    Ethnicity: 'white',
-    PriorDefault: 'No',
-    Employed: 'Yes',
-    DriversLicense: 'Yes',
-    Citizen: 'by birth',
-  } as PredictionInput,
-  
-  lowChance: {
+export const testScenarios = {
+  // Young, unemployed, high debt, prior default → LOW
+  worstCase: {
     Age: 22,
     Income: 18000,
-    Debt: 20000,
+    Debt: 25000,
     YearsEmployed: 0,
     Gender: 'Female',
     Married: 'No',
@@ -144,5 +139,56 @@ export const examples = {
     Employed: 'No',
     DriversLicense: 'No',
     Citizen: 'temporary',
-  } as PredictionInput,
+  },
+  
+  // Average applicant → MID
+  average: {
+    Age: 35,
+    Income: 45000,
+    Debt: 8000,
+    YearsEmployed: 4,
+    Gender: 'Male',
+    Married: 'Yes',
+    BankCustomer: 'Yes',
+    EducationLevel: 'high_school',
+    Ethnicity: 'white',
+    PriorDefault: 'No',
+    Employed: 'Yes',
+    DriversLicense: 'Yes',
+    Citizen: 'by birth',
+  },
+  
+  // Good profile → HIGH
+  goodCase: {
+    Age: 40,
+    Income: 75000,
+    Debt: 5000,
+    YearsEmployed: 10,
+    Gender: 'Male',
+    Married: 'Yes',
+    BankCustomer: 'Yes',
+    EducationLevel: 'bachelors',
+    Ethnicity: 'white',
+    PriorDefault: 'No',
+    Employed: 'Yes',
+    DriversLicense: 'Yes',
+    Citizen: 'by birth',
+  },
+  
+  // Great profile → VERY HIGH
+  bestCase: {
+    Age: 45,
+    Income: 120000,
+    Debt: 2000,
+    YearsEmployed: 15,
+    Gender: 'Male',
+    Married: 'Yes',
+    BankCustomer: 'Yes',
+    EducationLevel: 'masters',
+    Ethnicity: 'white',
+    PriorDefault: 'No',
+    Employed: 'Yes',
+    DriversLicense: 'Yes',
+    Citizen: 'by birth',
+  },
 }

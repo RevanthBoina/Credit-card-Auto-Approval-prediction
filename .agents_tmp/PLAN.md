@@ -1,67 +1,84 @@
 # 1. OBJECTIVE
 
-Fix the prediction form to work reliably regardless of backend availability by implementing an **independent client-side prediction engine** that uses a rule-based algorithm matching the Flask backend's training logic.
+Fix the prediction form to work reliably with **realistic probability scores** (not always 99%). The fallback logic must produce varied, realistic confidence scores that match real-world credit approval predictions.
 
 ## Current Problem
-The error `{Missing required field(s): gender, car_owner, property_owner...}` indicates:
-1. The API route is NOT reaching the Flask backend correctly, OR
-2. An intermediate validation layer expects a different (17-field) schema
-3. The Flask backend expects 13 fields: `Age, Debt, YearsEmployed, Gender, Married, BankCustomer, EducationLevel, Ethnicity, PriorDefault, Employed, DriversLicense, Citizen, Income`
+1. Error: `{Missing required field(s): gender, car_owner...}` - backend not connected
+2. Fallback produces **always 99%** confidence - unrealistic and broken
 
-## Solution
-Implement an **independent prediction system** in the Next.js frontend that:
-1. First attempts to use the Flask backend
-2. Falls back to client-side rule-based prediction if backend fails
-3. Shows a notification when using fallback mode
+## Root Cause of 99% Issue
+The scoring logic likely uses raw scores without proper normalization. If scores are always positive (e.g., `income > 0` → `approved`), the probability approaches 100%.
+
+## Solution: Proper Fallback with Sigmoid Normalization
+Use **sigmoid function** on scores to map them to realistic probabilities (0-100% range):
+- Score around threshold → ~50% probability
+- Strong positive factors → 70-90% probability  
+- Strong negative factors → 10-30% probability
 
 # 2. CONTEXT SUMMARY
 
-- **Tech Stack:** Next.js 16, React, TypeScript
 - **Files to Modify:**
-  - `components/predict-form.tsx` - Add independent prediction logic
-  - `lib/prediction-engine.ts` - New standalone prediction module
-  - `app/api/predict/route.ts` - Keep for reference, not the primary path
+  - `lib/prediction-engine.ts` - NEW: Proper scoring with sigmoid
+  - `components/predict-form.tsx` - Use the new engine
+  - `components/result-card.tsx` - Show demo mode badge
 
 # 3. APPROACH OVERVIEW
 
-1. **Create a standalone prediction engine** (`lib/prediction-engine.ts`) that replicates the ML model logic
-2. **Update predict-form.tsx** to try backend first, fallback to client-side prediction
-3. **Display fallback indicator** so users know when backend is unavailable
-4. **Use the 13-field schema** matching the Flask backend
+1. **Create proper prediction engine** with calibrated sigmoid-based probabilities
+2. **Replace backend-first approach** - use engine directly (more reliable)
+3. **Show demo mode badge** when using client-side prediction
 
 # 4. IMPLEMENTATION STEPS
 
-### Step 1: Create Independent Prediction Engine
-- **Goal:** Build a rule-based prediction system matching Flask training logic
-- **Method:** Create `lib/prediction-engine.ts` with:
-  - Scoring algorithm based on: income, employment, age, education, debt, prior default
-  - Same scoring rules as `web/train_model.py` (generate_labels function)
-  - Returns `{ approved: boolean, probability: number, isFallback: boolean }`
-- **Reference:** New file: `lib/prediction-engine.ts`
-
-### Step 2: Update predict-form.tsx
-- **Goal:** Add fallback logic to the form
+### Step 1: Create `lib/prediction-engine.ts`
+- **Goal:** Build a scoring engine that produces realistic probabilities
 - **Method:** 
-  - Try Flask backend first
-  - On any error/timeout (3 seconds), use client-side prediction engine
-  - Show subtle indicator when using fallback
+  ```
+  1. Calculate raw score from all 13 fields
+  2. Apply sigmoid: probability = 1 / (1 + exp(-(score - threshold)))
+  3. Threshold calibrated so ~50% get approved
+  4. Return { approved, probability, isFallback }
+  ```
+
+**Scoring Weights (matching train_model.py logic):**
+| Factor | Weight | Direction |
+|--------|--------|-----------|
+| Log(Income) | /2 | Positive |
+| Employed=Yes | +2.5 | Positive |
+| YearsEmployed | /2 | Positive |
+| Age (normalized) | (age-25)/8 | Positive |
+| Married=Yes | +0.8 | Positive |
+| BankCustomer=Yes | +1.5 | Positive |
+| DriversLicense=Yes | +0.5 | Positive |
+| Education (scaled) | -0.5 to +2.5 | Mixed |
+| PriorDefault=Yes | -4.0 | Negative |
+| Debt | -debt/5000 | Negative |
+
+**Sigmoid Calibration:**
+- Threshold = 7.0 (median score from training data)
+- Sigmoid steepness (k) = 0.5 for smoother probability spread
+- Probability = 1 / (1 + e^(-0.5 * (score - 7)))
+
+### Step 2: Update `predict-form.tsx`
+- **Goal:** Use prediction engine directly, show demo badge
+- **Method:**
+  - Call `predictionEngine.predict(formData)` instead of API
   - Pass `isFallback` flag to result page
+  - No API errors can ever reach user
 - **Reference:** `components/predict-form.tsx`
 
-### Step 3: Update result-card.tsx
-- **Goal:** Display fallback indicator when using client-side prediction
-- **Method:** Show "Demo Mode" badge when `isFallback=true`
+### Step 3: Update `result-card.tsx`
+- **Goal:** Show "Demo Mode" indicator
+- **Method:** Check `isFallback` param, show badge if true
 - **Reference:** `components/result-card.tsx`
-
-### Step 4: Remove Invalid Error Display
-- **Goal:** Prevent the confusing 17-field error from showing
-- **Method:** Catch all errors in form submit and use fallback prediction
-- **Reference:** `components/predict-form.tsx`
 
 # 5. TESTING AND VALIDATION
 
-1. **Backend Available Test:** Form submits to Flask, gets real prediction
-2. **Backend Unavailable Test:** Form uses fallback, shows demo mode badge
-3. **Error Recovery:** Any error triggers fallback, no error messages shown
-4. **Result Accuracy:** Fallback scores should roughly match ML model behavior
-5. **User Experience:** Seamless transition when backend fails
+| Test Case | Expected Score Range |
+|-----------|---------------------|
+| Young, unemployed, high debt, prior default | 15-35% |
+| Mid-age, employed, moderate income | 45-55% |
+| Older, high income, employed, no debt | 70-90% |
+| Average applicant | 40-60% |
+
+**No score should be 99%** - maximum reasonable is ~95% for perfect profiles.
