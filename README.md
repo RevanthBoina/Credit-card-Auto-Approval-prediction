@@ -438,9 +438,7 @@ Distributed under the MIT License. See [`LICENSE`](LICENSE) for details.
 
 ---
 
-<div align="center">
 
-**Revanth Boina** — *Lead Engineer / Architect*
 
 [![GitHub](https://img.shields.io/badge/GitHub-RevanthBoina-181717?style=for-the-badge&logo=github)](https://github.com/RevanthBoina)
 
