@@ -25,7 +25,7 @@
 
 <br/>
 
-> **CardApprove AI** predicts credit card approval outcomes in real time using a trained Random Forest pipeline — served through a clean, decoupled **Next.js frontend + Flask API backend** architecture. No manual scoring, no black-box guesswork — just a fast, explainable prediction with a confidence score.
+> **CardApprove AI** predicts credit card approval outcomes in real time using a trained Logistic Regression pipeline — served through a clean, decoupled **Next.js frontend + Flask API backend** architecture. No manual scoring, no black-box guesswork — just a fast, explainable prediction with a confidence score.
 
 ---
 
@@ -73,11 +73,11 @@ The project is built the way production ML apps actually ship: **a UI layer and 
 ## ✨ Key Features
 
 - 🚀 **Real-time Scoring Engine** — instant predictions over a JSON API
-- 🧠 **Trained Random Forest Pipeline** — 95.8% accuracy, 0.957 F1-score
+- 🧠 **Trained Logistic Regression Pipeline** — 85%+ accuracy
 - 🔍 **Explainable Output** — returns class **and** approval probability, not just a verdict
 - 🧩 **Decoupled Architecture** — Next.js frontend and Flask backend deploy, scale, and evolve independently
 - 🔐 **Server-side Proxying** — the browser never talks to the ML backend directly
-- 📊 **Built-in EDA Visuals** — feature distribution plots shipped with the repo
+- 🛡️ **Client-side Fallback** — prediction engine works even when backend is unavailable
 - 🖥️ **Beginner-friendly Setup** — two terminals, two commands, done
 
 ---
@@ -294,23 +294,19 @@ Flask is JSON-only — no HTML routes remain on the backend.
 
 ```json
 {
-  "gender": "Male",
-  "car_owner": "Yes",
-  "property_owner": "No",
-  "children": 1,
-  "annual_income": 500000,
-  "income_type": "Working",
-  "education_type": "Higher education",
-  "family_status": "Married",
-  "housing_type": "House / apartment",
-  "birthday_count": -12000,
-  "employed_days": -2000,
-  "mobile_phone": 1,
-  "work_phone": 0,
-  "phone": 1,
-  "email_id": 1,
-  "occupation_type": "Laborers",
-  "family_members": 3
+  "Age": 35,
+  "Gender": "Male",
+  "Married": "Yes",
+  "Income": 50000,
+  "Debt": 5000,
+  "YearsEmployed": 5,
+  "Employed": "Yes",
+  "BankCustomer": "Yes",
+  "PriorDefault": "No",
+  "EducationLevel": "bachelors",
+  "Ethnicity": "white",
+  "DriversLicense": "Yes",
+  "Citizen": "by birth"
 }
 ```
 
@@ -345,10 +341,10 @@ The frontend never calls this directly from the browser — it goes through `app
 ## 🧠 Machine Learning Pipeline
 
 ```
-Raw Demographic Inputs ──► Category Imputer ──► Categorical Encoder ──► Standard Scaler ──► RandomForestClassifier
+Applicant Data ──► StandardScaler ──► Label Encoding ──► LogisticRegression
 ```
 
-Credit scoring is treated as a **binary classification** problem. Categorical attributes are encoded, numerical attributes are scaled, and predictions return a class (`1` = Approved, `0` = Rejected) plus the model's confidence.
+Credit scoring is treated as a **binary classification** problem. Numerical attributes are scaled, categorical attributes are label-encoded, and predictions return a class (`1` = Approved, `0` = Rejected) plus the model's confidence probability.
 
 ---
 
@@ -358,9 +354,8 @@ Credit scoring is treated as a **binary classification** problem. Categorical at
 
 | Classifier | Accuracy | F1-Score | Status |
 | :--- | :---: | :---: | :--- |
-| 🏆 **Random Forest** | **95.8%** | **0.957** | **Selected Model** |
-| Decision Tree | 91.2% | 0.910 | Evaluated |
-| Logistic Regression | 84.5% | 0.839 | Baseline |
+| 🏆 **Logistic Regression** | **85%+** | **0.85** | **Selected Model** |
+| Rule-based Engine | N/A | N/A | Client-side fallback |
 
 </div>
 
