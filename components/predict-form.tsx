@@ -7,13 +7,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { predict, PredictionInput } from '@/lib/prediction-engine'
 
 // Schema: Age, Debt, YearsEmployed, Gender, Married, BankCustomer,
 // EducationLevel, Ethnicity, PriorDefault, Employed, DriversLicense, Citizen, Income
 
 type FormData = Record<string, string>
 
-async function runPrediction(data: FormData): Promise<{ approved: boolean; probability: number }> {
+async function runPrediction(
+  data: FormData
+): Promise<{ approved: boolean; probability: number; isFallback: boolean }> {
   const payload = {
     Age: Number(data.Age),
     Debt: Number(data.Debt),
@@ -30,18 +33,56 @@ async function runPrediction(data: FormData): Promise<{ approved: boolean; proba
     Income: Number(data.Income),
   }
 
-  const response = await fetch('/api/predict', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  })
+  // Try backend first with 3 second timeout
+  try {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 3000)
 
-  const result = await response.json()
-  if (!result.success) throw new Error(result.error)
+    const response = await fetch('/api/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    })
 
+    clearTimeout(timeoutId)
+
+    if (response.ok) {
+      const result = await response.json()
+      if (result.success) {
+        return {
+          approved: result.prediction === 1,
+          probability: Math.round(result.probability * 100),
+          isFallback: false,
+        }
+      }
+    }
+  } catch {
+    // Backend failed, use fallback
+  }
+
+  // Fallback to client-side prediction
+  const input: PredictionInput = {
+    Age: Number(data.Age),
+    Debt: Number(data.Debt),
+    YearsEmployed: Number(data.YearsEmployed),
+    Gender: data.Gender,
+    Married: data.Married,
+    BankCustomer: data.BankCustomer,
+    EducationLevel: data.EducationLevel,
+    Ethnicity: data.Ethnicity,
+    PriorDefault: data.PriorDefault,
+    Employed: data.Employed,
+    DriversLicense: data.DriversLicense,
+    Citizen: data.Citizen,
+    Income: Number(data.Income),
+  }
+
+  const result = predict(input)
   return {
-    approved: result.prediction === 1,
-    probability: Math.round(result.probability * 100),
+    approved: result.approved,
+    probability: result.probability,
+    isFallback: true,
   }
 }
 
@@ -62,7 +103,6 @@ export default function PredictForm() {
   const [form, setForm] = useState<FormData>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   const sections = [
     {
@@ -119,14 +159,41 @@ export default function PredictForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setError(null)
     if (!validate()) return
     setLoading(true)
+    
     try {
       const result = await runPrediction(form)
-      router.push(`/result?approved=${result.approved}&probability=${result.probability}`)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong')
+      const params = new URLSearchParams({
+        approved: String(result.approved),
+        probability: String(result.probability),
+        isFallback: String(result.isFallback),
+      })
+      router.push(`/result?${params.toString()}`)
+    } catch {
+      // Use fallback on any error
+      const input: PredictionInput = {
+        Age: Number(form.Age),
+        Debt: Number(form.Debt),
+        YearsEmployed: Number(form.YearsEmployed),
+        Gender: form.Gender,
+        Married: form.Married,
+        BankCustomer: form.BankCustomer,
+        EducationLevel: form.EducationLevel,
+        Ethnicity: form.Ethnicity,
+        PriorDefault: form.PriorDefault,
+        Employed: form.Employed,
+        DriversLicense: form.DriversLicense,
+        Citizen: form.Citizen,
+        Income: Number(form.Income),
+      }
+      const result = predict(input)
+      const params = new URLSearchParams({
+        approved: String(result.approved),
+        probability: String(result.probability),
+        isFallback: 'true',
+      })
+      router.push(`/result?${params.toString()}`)
     } finally {
       setLoading(false)
     }
@@ -134,14 +201,6 @@ export default function PredictForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {error && (
-        <Card className="border-destructive bg-destructive/10">
-          <CardContent className="pt-4">
-            <p className="text-sm text-destructive">{error}</p>
-          </CardContent>
-        </Card>
-      )}
-
       {sections.map((section) => (
         <Card key={section.title}>
           <CardHeader className="pb-3">

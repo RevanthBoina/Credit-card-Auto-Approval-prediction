@@ -1,9 +1,10 @@
 'use client'
 
 import { useSearchParams, useRouter } from 'next/navigation'
-import { CheckCircle2, XCircle, ArrowLeft, RefreshCw } from 'lucide-react'
+import { CheckCircle2, XCircle, ArrowLeft, RefreshCw, Zap } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { useEffect, useState } from 'react'
 
 export default function ResultCard() {
@@ -13,6 +14,7 @@ export default function ResultCard() {
 
   const approved = params.get('approved') === 'true'
   const probability = Number(params.get('probability') ?? 0)
+  const isFallback = params.get('isFallback') === 'true'
 
   useEffect(() => {
     const timer = setTimeout(() => setAnimated(true), 100)
@@ -36,6 +38,13 @@ export default function ResultCard() {
 
   return (
     <div className={`space-y-6 transition-all duration-500 ${animated ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+      
+      {/* Fallback indicator */}
+      {isFallback && (
+        <Badge variant="outline" className="mx-auto gap-1 border-amber-500 text-amber-600">
+          <Zap className="h-3 w-3" /> Demo Mode
+        </Badge>
+      )}
       
       {/* Status icon */}
       <div className="flex justify-center">
