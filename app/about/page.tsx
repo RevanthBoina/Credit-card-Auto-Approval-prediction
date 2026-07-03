@@ -17,10 +17,10 @@ const workflow = [
 ]
 
 const featuresList = [
-  'Gender', 'Car ownership', 'Real estate ownership', 'Number of children',
-  'Annual income', 'Income type', 'Education level', 'Family status',
-  'Housing type', 'Age', 'Years employed', 'Contact details',
-  'Occupation type', 'Family members',
+  'Age', 'Gender', 'Married', 'Income', 'Debt',
+  'Years Employed', 'Employed', 'Bank Customer',
+  'Prior Default', 'Education Level', 'Ethnicity',
+  'Driver\'s License', 'Citizenship Status',
 ]
 
 export default function AboutPage() {
@@ -103,7 +103,7 @@ export default function AboutPage() {
         <div className="mt-10">
           <h2 className="text-lg font-semibold text-foreground sm:text-xl">Features Used by the Model</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            The classifier considers the following 14 applicant attributes:
+            The classifier considers the following 13 applicant attributes:
           </p>
           <ul className="mt-4 grid gap-2 sm:grid-cols-2">
             {featuresList.map((f) => (
@@ -124,7 +124,7 @@ export default function AboutPage() {
             <h2 className="text-lg font-semibold text-foreground sm:text-xl">Future Integration</h2>
           </div>
           <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-            A planned next step is to integrate <span className="font-medium text-foreground">IBM Watson Machine Learning</span> to host the trained model as a cloud-based endpoint. This would replace the local Flask inference layer with a managed, scalable deployment — enabling REST API calls to IBM Watson AutoAI or a manually deployed pipeline for real-time predictions.
+            A planned next step is to deploy the Flask API to <span className="font-medium text-foreground">Render</span> for production hosting. This would replace the local Flask inference layer with a managed, scalable cloud deployment — enabling REST API calls for real-time predictions from anywhere.
           </p>
         </div>
 
