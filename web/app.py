@@ -193,6 +193,38 @@ def health():
     }), 200 if model_ok else 503
 
 
+@app.route("/_debug/model-info", methods=["GET"])
+def debug_model_info():
+    """TEMPORARY: introspect the loaded pipeline's expected input schema.
+
+    Safe to remove once the real feature contract is confirmed.
+    """
+    try:
+        model = get_model()
+        info = {"success": True, "repr": str(model)[:2000]}
+        feature_names = getattr(model, "feature_names_in_", None)
+        if feature_names is not None:
+            info["feature_names_in_"] = list(feature_names)
+        try:
+            first_step = model.steps[0][1] if hasattr(model, "steps") else None
+            if first_step is not None:
+                fn = getattr(first_step, "feature_names_in_", None)
+                if fn is not None:
+                    info["first_step_feature_names_in_"] = list(fn)
+                info["first_step_repr"] = str(first_step)[:1000]
+                transformers = getattr(first_step, "transformers", None)
+                if transformers is not None:
+                    info["transformers"] = [
+                        {"name": t[0], "columns": list(t[2]) if hasattr(t[2], "__iter__") else t[2]}
+                        for t in transformers
+                    ]
+        except Exception as inner_exc:  # noqa: BLE001
+            info["introspection_error"] = str(inner_exc)
+        return jsonify(info), 200
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"success": False, "error": str(exc)}), 500
+
+
 @app.route("/predict", methods=["POST"])
 def predict():
     """Run inference on a JSON payload and return a JSON prediction."""
