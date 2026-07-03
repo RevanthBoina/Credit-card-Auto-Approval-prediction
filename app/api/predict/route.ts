@@ -7,8 +7,8 @@ import { NextRequest, NextResponse } from 'next/server'
  * (same-origin, no CORS needed), and this route forwards the request
  * to FLASK_API_URL server-to-server.
  *
- * New Schema (14 fields):
- *   Age, Debt, YearsEmployed, CreditScore, Gender, Married, BankCustomer,
+ * Schema (13 fields - NO Credit Score):
+ *   Age, Debt, YearsEmployed, Gender, Married, BankCustomer,
  *   EducationLevel, Ethnicity, PriorDefault, Employed, DriversLicense,
  *   Citizen, Income
  *
