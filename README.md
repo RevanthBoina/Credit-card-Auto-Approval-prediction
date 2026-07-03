@@ -1,33 +1,58 @@
-# Credit-card-Auto-Approval-prediction
+# Credit Card Approval Prediction System
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [v0](https://v0.app).
+This project is a web-based Credit Card Approval Prediction System. It includes an end-to-end Machine Learning pipeline to train an approval classification model and a Flask web application to serve the model predictions.
 
-## Built with v0
+---
 
-This repository is linked to a [v0](https://v0.app) project. You can continue developing by visiting the link below -- start new chats to make changes, and v0 will push commits directly to this repo. Every merge to `main` will automatically deploy.
+## 🚀 Key Features
 
-[Continue working on v0 →](https://v0.app/chat/projects/prj_OESPHAAM2QU9SbEJyixFILbrx709)
+*   **Machine Learning Pipeline**: Trained using Random Forest, Decision Tree, and Logistic Regression models. The final pipeline utilizes a Random Forest classifier with **95.8% accuracy**.
+*   **Web Dashboard**: Built with Flask (Python), allowing users to input applicant demographics (Age, Gender, Income, Education, Assets, etc.) and get instant decision outputs.
+*   **EDA Analysis**: Visualizations exploring relationships like Income Distribution, Age Distribution, Gender vs. Approval, and Education Level vs. Approval.
 
-## Getting Started
+---
 
-First, run the development server:
+## 🛠️ Tech Stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
+*   **Frontend**: HTML5, Vanilla CSS, Jinja2 Templates.
+*   **Backend**: Python, Flask.
+*   **Machine Learning**: Scikit-Learn, Pandas, Joblib.
+*   **Data Visualization**: Matplotlib, Seaborn.
+
+---
+
+## 📂 Project Structure
+
+```
+├── web/
+│   ├── app.py                     # Main Flask Application
+│   ├── requirements.txt           # Python Dependency Requirements
+│   ├── models/
+│   │   └── final_credit_model_pipeline.pkl  # Trained ML Pipeline Model
+│   ├── static/
+│   │   ├── css/                   # Stylesheets
+│   │   ├── js/                    # Client-side scripts
+│   │   └── img/                   # EDA visualisations and images
+│   └── templates/                 # Jinja2 HTML Layouts (Home, Predict, Result)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 💻 Running the App Locally
 
-## Learn More
+### 1. Navigate to the web folder
+```bash
+cd web
+```
 
-To learn more, take a look at the following resources:
+### 2. Install dependencies
+```bash
+pip install -r requirements.txt
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-- [v0 Documentation](https://v0.app/docs) - learn about v0 and how to use it.
+### 3. Run the application
+```bash
+python app.py
+```
+
+Open your browser and navigate to: **http://127.0.0.1:8080**
