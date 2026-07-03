@@ -1,9 +1,5 @@
-# Web framework
+# Web framework (API-only backend; JSON in/out, no server-rendered forms)
 Flask==3.0.3
-
-# Form handling & CSRF protection (add when forms are wired up)
-Flask-WTF==1.2.1
-WTForms==3.1.2
 
 # Machine-learning stack
 # Pin scikit-learn to the version used in Colab to avoid unpickling errors.
