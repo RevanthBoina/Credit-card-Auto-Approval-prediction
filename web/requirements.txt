@@ -2,8 +2,9 @@
 Flask==3.0.3
 
 # Machine-learning stack
-# Pin scikit-learn to the version used in Colab to avoid unpickling errors.
-scikit-learn==1.2.2
+# Must match (or be compatible with) the scikit-learn version the .pkl was trained with,
+# or joblib.load() will fail to unpickle internal sklearn classes.
+scikit-learn==1.7.2
 xgboost
 imbalanced-learn
 pandas==2.2.2
