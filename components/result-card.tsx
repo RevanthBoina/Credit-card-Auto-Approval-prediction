@@ -2,129 +2,109 @@
 
 import { useSearchParams, useRouter } from 'next/navigation'
 import { CheckCircle2, XCircle, ArrowLeft, RefreshCw } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { useEffect, useState } from 'react'
 
 export default function ResultCard() {
   const params = useSearchParams()
   const router = useRouter()
+  const [animated, setAnimated] = useState(false)
 
   const approved = params.get('approved') === 'true'
   const probability = Number(params.get('probability') ?? 0)
-  const income = params.get('income')
+
+  useEffect(() => {
+    const timer = setTimeout(() => setAnimated(true), 100)
+    return () => clearTimeout(timer)
+  }, [])
 
   if (!params.get('approved')) {
     return (
-      <div className="rounded-xl border border-border bg-card p-8 text-center sm:p-10">
-        <p className="text-sm text-muted-foreground">No prediction data found. Please complete the form first.</p>
-        <button
-          onClick={() => router.push('/predict')}
-          className="mt-6 rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
-        >
+      <Card className="p-8 text-center sm:p-10">
+        <p className="text-sm text-muted-foreground">No prediction data found.</p>
+        <Button onClick={() => router.push('/predict')} className="mt-6">
           Go to Prediction Form
-        </button>
-      </div>
+        </Button>
+      </Card>
     )
   }
 
-  const statusColor = approved ? 'text-[oklch(0.45_0.18_145)]' : 'text-destructive'
-  const statusBg = approved ? 'bg-[oklch(0.55_0.18_145/0.1)]' : 'bg-destructive/10'
-  const barColor = approved ? 'bg-[oklch(0.55_0.18_145)]' : 'bg-destructive'
+  const statusColor = approved ? 'text-green-600' : 'text-destructive'
+  const statusBg = approved ? 'bg-green-100' : 'bg-destructive/10'
+  const barColor = approved ? 'bg-green-500' : 'bg-destructive'
 
   return (
-    <div className="flex flex-col items-center gap-6 text-center">
-
+    <div className={`space-y-6 transition-all duration-500 ${animated ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+      
       {/* Status icon */}
-      <div className={`flex h-16 w-16 items-center justify-center rounded-full ${statusBg}`}>
-        {approved ? (
-          <CheckCircle2 className="h-8 w-8 text-[oklch(0.55_0.18_145)]" />
-        ) : (
-          <XCircle className="h-8 w-8 text-destructive" />
-        )}
-      </div>
-
-      {/* Verdict heading */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
-          {approved ? 'Prediction: Likely Approved' : 'Prediction: Likely Rejected'}
-        </h1>
-        <p className="mt-2 px-2 text-sm leading-relaxed text-muted-foreground">
-          {approved
-            ? 'Based on the applicant details entered, the model predicts this application would likely be approved.'
-            : 'Based on the applicant details entered, the model predicts this application may not meet approval criteria.'}
-        </p>
-      </div>
-
-      {/* Stats card */}
-      <div className="w-full rounded-xl border border-border bg-card p-5 text-left sm:p-6">
-        <h2 className="mb-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-          Prediction Details
-        </h2>
-        <div className="divide-y divide-border">
-
-          <div className="flex items-center justify-between py-3 first:pt-0">
-            <span className="text-sm text-muted-foreground">Model Confidence</span>
-            <span className={`text-lg font-bold ${statusColor}`}>{probability}%</span>
-          </div>
-
-          <div className="py-3">
-            <div className="mb-1.5 flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">Approval probability</span>
-              <span className="text-xs text-muted-foreground">{probability}%</span>
-            </div>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
-              <div
-                className={`h-full rounded-full transition-all duration-700 ${barColor}`}
-                style={{ width: `${probability}%` }}
-              />
-            </div>
-          </div>
-
-          {income && (
-            <div className="flex items-center justify-between py-3">
-              <span className="text-sm text-muted-foreground">Annual Income (entered)</span>
-              <span className="font-semibold text-foreground">
-                ${Number(income).toLocaleString()}
-              </span>
-            </div>
+      <div className="flex justify-center">
+        <div className={`flex h-20 w-20 items-center justify-center rounded-full ${statusBg} transition-transform duration-300 ${animated ? 'scale-100' : 'scale-50'}`}>
+          {approved ? (
+            <CheckCircle2 className="h-10 w-10 text-green-600" />
+          ) : (
+            <XCircle className="h-10 w-10 text-destructive" />
           )}
-
-          <div className="flex items-center justify-between py-3 last:pb-0">
-            <span className="text-sm text-muted-foreground">Result</span>
-            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusBg} ${statusColor}`}>
-              {approved ? 'APPROVED' : 'REJECTED'}
-            </span>
-          </div>
         </div>
       </div>
 
-      {/* Neutral interpretation */}
-      <div className="w-full rounded-lg border border-border bg-card px-5 py-4 text-left">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Interpretation</p>
-        <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+      {/* Verdict */}
+      <div className="text-center">
+        <h1 className={`text-3xl font-bold ${statusColor}`}>
+          {approved ? '✅ Likely Approved' : '❌ Likely Rejected'}
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
           {approved
-            ? 'A confidence above 55% indicates the model considers this applicant likely to meet approval criteria based on training data patterns. This is not a formal credit decision.'
-            : 'A lower confidence score suggests the applicant profile does not closely match approved applicants in the training dataset. Improving income level, employment history, or asset ownership may influence future results.'}
+            ? 'Based on the entered details, this application would likely be approved.'
+            : 'Based on the entered details, this application may not meet approval criteria.'}
         </p>
       </div>
 
+      {/* Stats Card */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="space-y-4">
+            <div className="text-center">
+              <span className="text-5xl font-bold">{probability}%</span>
+              <p className="text-sm text-muted-foreground">Confidence Score</p>
+            </div>
+            
+            {/* Animated Progress Bar */}
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Approval Probability</span>
+                <span className="font-medium">{probability}%</span>
+              </div>
+              <div className="h-3 w-full overflow-hidden rounded-full bg-secondary">
+                <div
+                  className={`h-full rounded-full transition-all duration-1000 ease-out ${barColor}`}
+                  style={{ width: animated ? `${probability}%` : '0%' }}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-center pt-2">
+              <span className={`rounded-full px-4 py-1.5 text-sm font-semibold ${statusBg} ${statusColor}`}>
+                {approved ? 'APPROVED' : 'REJECTED'}
+              </span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Disclaimer */}
-      <p className="max-w-md px-2 text-xs leading-relaxed text-muted-foreground">
-        This result is generated by a machine learning model trained on the UCI Credit Card Approval dataset. It is for educational and demonstration purposes only and does not constitute a real credit assessment or financial advice.
+      <p className="text-xs text-muted-foreground text-center">
+        This is for educational purposes only. Not a real credit decision.
       </p>
 
       {/* Actions */}
-      <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-        <button
-          onClick={() => router.push('/predict')}
-          className="flex w-full items-center justify-center gap-2 rounded-lg border border-border px-6 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-secondary sm:w-auto sm:py-2.5"
-        >
-          <RefreshCw className="h-4 w-4" /> Try Another Prediction
-        </button>
-        <button
-          onClick={() => router.push('/')}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 sm:w-auto sm:py-2.5"
-        >
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <Button variant="outline" onClick={() => router.push('/predict')} className="flex-1 gap-2">
+          <RefreshCw className="h-4 w-4" /> Try Again
+        </Button>
+        <Button onClick={() => router.push('/')} className="flex-1 gap-2">
           <ArrowLeft className="h-4 w-4" /> Back to Home
-        </button>
+        </Button>
       </div>
     </div>
   )

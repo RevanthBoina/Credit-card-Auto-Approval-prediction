@@ -2,7 +2,11 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2 } from 'lucide-react'
+import { Loader2, User, DollarSign, Briefcase } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 
 // Schema: Age, Debt, YearsEmployed, Gender, Married, BankCustomer,
 // EducationLevel, Ethnicity, PriorDefault, Employed, DriversLicense, Citizen, Income
@@ -41,6 +45,18 @@ async function runPrediction(data: FormData): Promise<{ approved: boolean; proba
   }
 }
 
+const selectOptions: Record<string, string[]> = {
+  Gender: ['Male', 'Female'],
+  Married: ['Yes', 'No'],
+  Employed: ['Yes', 'No'],
+  BankCustomer: ['Yes', 'No'],
+  PriorDefault: ['Yes', 'No'],
+  DriversLicense: ['Yes', 'No'],
+  EducationLevel: ['none', 'high_school', 'bachelors', 'masters', 'phd'],
+  Ethnicity: ['white', 'black', 'asian', 'latino', 'other'],
+  Citizen: ['by birth', 'by other means', 'temporary'],
+}
+
 export default function PredictForm() {
   const router = useRouter()
   const [form, setForm] = useState<FormData>({})
@@ -48,31 +64,49 @@ export default function PredictForm() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const fields = [
-    { name: 'Age', label: 'Age', type: 'number', placeholder: '25', required: true },
-    { name: 'Gender', label: 'Gender', type: 'select', options: ['Male', 'Female'], required: true },
-    { name: 'Married', label: 'Married', type: 'select', options: ['Yes', 'No'], required: true },
-    { name: 'Income', label: 'Income ($)', type: 'number', placeholder: '50000', required: true },
-    { name: 'Debt', label: 'Debt ($)', type: 'number', placeholder: '5000', required: true },
-    { name: 'YearsEmployed', label: 'Years Employed', type: 'number', placeholder: '5', required: true },
-    { name: 'Employed', label: 'Employed', type: 'select', options: ['Yes', 'No'], required: true },
-    { name: 'BankCustomer', label: 'Bank Customer', type: 'select', options: ['Yes', 'No'], required: true },
-    { name: 'PriorDefault', label: 'Prior Default', type: 'select', options: ['Yes', 'No'], required: true },
-    { name: 'EducationLevel', label: 'Education', type: 'select', options: ['high_school', 'bachelors', 'masters', 'phd', 'none'], required: true },
-    { name: 'Ethnicity', label: 'Ethnicity', type: 'select', options: ['white', 'black', 'asian', 'latino', 'other'], required: true },
-    { name: 'DriversLicense', label: 'Driver License', type: 'select', options: ['Yes', 'No'], required: true },
-    { name: 'Citizen', label: 'Citizen', type: 'select', options: ['by birth', 'by other means', 'temporary'], required: true },
+  const sections = [
+    {
+      title: 'Personal Information',
+      icon: User,
+      fields: [
+        { name: 'Age', label: 'Age', type: 'number', placeholder: '25' },
+        { name: 'Gender', label: 'Gender' },
+        { name: 'Married', label: 'Married' },
+        { name: 'Ethnicity', label: 'Ethnicity' },
+      ],
+    },
+    {
+      title: 'Financial Details',
+      icon: DollarSign,
+      fields: [
+        { name: 'Income', label: 'Annual Income ($)', type: 'number', placeholder: '50000' },
+        { name: 'Debt', label: 'Current Debt ($)', type: 'number', placeholder: '5000' },
+      ],
+    },
+    {
+      title: 'Employment & Background',
+      icon: Briefcase,
+      fields: [
+        { name: 'YearsEmployed', label: 'Years Employed', type: 'number', placeholder: '5' },
+        { name: 'Employed', label: 'Currently Employed' },
+        { name: 'BankCustomer', label: 'Existing Bank Customer' },
+        { name: 'PriorDefault', label: 'Prior Default' },
+        { name: 'EducationLevel', label: 'Education Level' },
+        { name: 'DriversLicense', label: "Driver's License" },
+        { name: 'Citizen', label: 'Citizenship Status' },
+      ],
+    },
   ]
 
   function validate() {
     const newErrors: Record<string, string> = {}
-    fields.forEach(({ name, label, type, required }) => {
+    Object.keys(selectOptions).forEach(name => {
+      if (!form[name]) newErrors[name] = 'Required'
+    })
+    ;['Age', 'Income', 'Debt', 'YearsEmployed'].forEach(name => {
       const val = form[name]
-      if (required && (!val || val.trim() === '')) {
-        newErrors[name] = `${label} required`
-      } else if (type === 'number' && val && isNaN(Number(val))) {
-        newErrors[name] = 'Must be a number'
-      }
+      if (!val) newErrors[name] = 'Required'
+      else if (isNaN(Number(val))) newErrors[name] = 'Must be a number'
     })
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -92,7 +126,7 @@ export default function PredictForm() {
       const result = await runPrediction(form)
       router.push(`/result?approved=${result.approved}&probability=${result.probability}`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed')
+      setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
       setLoading(false)
     }
@@ -100,52 +134,76 @@ export default function PredictForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <h1 className="text-2xl font-bold text-center">Credit Card Approval</h1>
-      
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          {error}
-        </div>
+        <Card className="border-destructive bg-destructive/10">
+          <CardContent className="pt-4">
+            <p className="text-sm text-destructive">{error}</p>
+          </CardContent>
+        </Card>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-        {fields.map(({ name, label, type, options, placeholder, required }) => (
-          <div key={name} className="flex flex-col">
-            <label className="text-sm font-medium mb-1">
-              {label} {required && <span className="text-red-500">*</span>}
-            </label>
-            {type === 'select' ? (
-              <select
-                value={form[name] ?? ''}
-                onChange={e => handleChange(name, e.target.value)}
-                className={`border rounded px-3 py-2 ${errors[name] ? 'border-red-500' : 'border-gray-300'}`}
-              >
-                <option value="">Select</option>
-                {options?.map(o => (
-                  <option key={o} value={o}>{o}</option>
-                ))}
-              </select>
-            ) : (
-              <input
-                type="number"
-                placeholder={placeholder}
-                value={form[name] ?? ''}
-                onChange={e => handleChange(name, e.target.value)}
-                className={`border rounded px-3 py-2 ${errors[name] ? 'border-red-500' : 'border-gray-300'}`}
-              />
-            )}
-            {errors[name] && <span className="text-red-500 text-xs mt-1">{errors[name]}</span>}
-          </div>
-        ))}
-      </div>
+      {sections.map((section) => (
+        <Card key={section.title}>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                <section.icon className="h-4 w-4 text-primary" />
+              </div>
+              <CardTitle className="text-base">{section.title}</CardTitle>
+              <Badge variant="secondary" className="ml-auto text-xs">
+                {section.fields.length} fields
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {section.fields.map(({ name, label, type, placeholder }) => (
+                <div key={name} className="space-y-1.5">
+                  <label className="text-sm font-medium text-muted-foreground">
+                    {label}
+                  </label>
+                  {type === 'number' ? (
+                    <Input
+                      type="number"
+                      placeholder={placeholder}
+                      value={form[name] ?? ''}
+                      onChange={e => handleChange(name, e.target.value)}
+                      className={errors[name] ? 'border-destructive' : ''}
+                    />
+                  ) : (
+                    <select
+                      value={form[name] ?? ''}
+                      onChange={e => handleChange(name, e.target.value)}
+                      className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+                        errors[name] ? 'border-destructive' : ''
+                      }`}
+                    >
+                      <option value="">Select...</option>
+                      {selectOptions[name]?.map(o => (
+                        <option key={o} value={o}>{o}</option>
+                      ))}
+                    </select>
+                  )}
+                  {errors[name] && (
+                    <p className="text-xs text-destructive">{errors[name]}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full bg-blue-600 text-white py-3 rounded font-semibold hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
-      >
-        {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Get Prediction'}
-      </button>
+      <Button type="submit" disabled={loading} className="w-full" size="lg">
+        {loading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Processing...
+          </>
+        ) : (
+          'Get Prediction'
+        )}
+      </Button>
     </form>
   )
 }
