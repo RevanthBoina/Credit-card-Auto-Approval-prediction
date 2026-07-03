@@ -98,46 +98,49 @@ def generate_synthetic_data(n_samples: int = 5000) -> pd.DataFrame:
 
 def generate_labels(df: pd.DataFrame) -> np.ndarray:
     """
-    Generate approval labels based on logical rules.
+    Generate approval labels based on logical rules with forced balance.
     
     Positive factors: high credit score, high income, employed, long tenure
     Negative factors: prior default, high debt, no bank customer
     """
+    np.random.seed(42)
     scores = np.zeros(len(df))
     
     # Credit Score contribution (most important)
-    scores += (df["CreditScore"] - 500) / 50  # +1 per 50 points above 500
+    scores += (df["CreditScore"] - 500) / 100
     
     # Income contribution
-    scores += np.log1p(df["Income"]) / 2  # scaled log income
+    scores += np.log1p(df["Income"]) / 3
     
     # Employment status
-    scores += (df["Employed"] == "Yes").astype(int) * 1.5
-    scores += df["YearsEmployed"] / 5  # +1 per 5 years employed
+    scores += (df["Employed"] == "Yes").astype(int) * 2.0
+    scores += df["YearsEmployed"] / 3
     
     # Age (mature applicants more stable)
-    scores += ((df["Age"] - 25) / 10).clip(-1, 3)
+    scores += ((df["Age"] - 25) / 8).clip(-1, 4)
     
     # Positive factors
-    scores += (df["Married"] == "Yes").astype(int) * 0.5
-    scores += (df["BankCustomer"] == "Yes").astype(int) * 1.0
+    scores += (df["Married"] == "Yes").astype(int) * 0.8
+    scores += (df["BankCustomer"] == "Yes").astype(int) * 1.5
     scores += (df["DriversLicense"] == "Yes").astype(int) * 0.5
     
     # Education
-    edu_map = {"none": 0, "high_school": 0.5, "bachelors": 1.5, "masters": 2.0, "phd": 2.5}
+    edu_map = {"none": -0.5, "high_school": 0.5, "bachelors": 1.5, "masters": 2.0, "phd": 2.5}
     scores += df["EducationLevel"].map(edu_map)
     
     # Negative factors
-    scores -= (df["PriorDefault"] == "Yes").astype(int) * 3.0
-    scores -= df["Debt"] / 10000  # -1 per $10k debt
+    scores -= (df["PriorDefault"] == "Yes").astype(int) * 4.0
+    scores -= df["Debt"] / 5000
     
     # Add noise
-    scores += np.random.normal(0, 1, len(df))
+    scores += np.random.normal(0, 1.5, len(df))
     
-    # Convert to binary (approvals above threshold)
-    threshold = 2.0
+    # Find threshold to get ~50% approval rate
+    threshold_low = np.percentile(scores, 45)
+    threshold_high = np.percentile(scores, 55)
+    threshold = (threshold_low + threshold_high) / 2
+    
     labels = (scores > threshold).astype(int)
-    
     return labels
 
 
