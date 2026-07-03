@@ -164,6 +164,15 @@ def validate_and_transform(payload: dict) -> dict:
 # Routes
 # ---------------------------------------------------------------------------
 
+@app.route("/", methods=["GET"])
+def root():
+    """Lightweight liveness route for infra health probes (always 200 if the process is up).
+
+    Use GET /health for a real readiness check that reports model status.
+    """
+    return jsonify({"success": True, "service": "credit-approval-api"}), 200
+
+
 @app.route("/health", methods=["GET"])
 def health():
     """Liveness probe. Reports whether the model is loaded/loadable."""
