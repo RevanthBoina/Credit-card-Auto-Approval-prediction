@@ -1,0 +1,18 @@
+# Web framework (API-only backend; JSON in/out, no server-rendered forms)
+Flask==3.0.3
+
+# Machine-learning stack
+# Pinned to exactly match the scikit-learn version the .pkl was trained with
+# (confirmed via unpickle warnings: "... from version 1.6.1").
+# Any other version can fail to unpickle internal sklearn classes.
+scikit-learn==1.6.1
+xgboost
+imbalanced-learn
+pandas==2.2.2
+numpy==1.26.4
+
+# Model serialisation
+joblib==1.4.2
+
+# Environment variable management
+python-dotenv==1.0.1
