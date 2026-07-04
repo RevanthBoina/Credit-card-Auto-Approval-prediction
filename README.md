@@ -103,22 +103,22 @@ The project is built the way production ML apps actually ship: **a UI layer and 
 User
   │
   ▼
-Next.js Frontend  (app/)
+Next.js Frontend  (client/app/)
   │  fetch → same-origin, relative path
   ▼
-Next.js API Route  (app/api/predict/route.ts)
+Next.js API Route  (client/app/api/predict/route.ts)
   │  server-to-server fetch → FLASK_API_URL
   ▼
-Flask Backend  (web/app.py) — POST /predict
+Flask Backend  (server/web/app.py) — POST /predict
   │
   ▼
-Trained ML Pipeline  (web/models/final_credit_model_pipeline.pkl)
+Trained ML Pipeline  (server/web/models/credit_approval_model.pkl)
   │  predict() + predict_proba()
   ▼
 Prediction Response  (JSON: prediction, prediction_label, probability)
   │
   ▼
-Frontend Result UI  (app/result/page.tsx)
+Frontend Result UI  (client/app/result/page.tsx)
 ```
 
 **Why the proxy route exists:** the browser never calls Flask directly. It calls the same-origin `/api/predict` route, which forwards the request to Flask server-side via `FLASK_API_URL`. Zero CORS config, zero backend URL leaked to client code.
@@ -144,28 +144,39 @@ sequenceDiagram
 ## 📂 Project Structure
 
 ```
-├── app/                            # Next.js frontend (App Router)
-│   ├── api/predict/route.ts        # Server-side proxy to the Flask backend
-│   ├── page.tsx                    # Landing page
-│   ├── predict/page.tsx            # Prediction form page
-│   ├── result/page.tsx             # Prediction result page
-│   └── about/page.tsx              # About page
-├── components/                     # Shared React UI components
-│   ├── predict-form.tsx            # Form + real API call to /api/predict
-│   ├── result-card.tsx             # Renders the prediction result
-│   └── navbar.tsx
-├── web/                             # Flask backend (API-only)
-│   ├── app.py                      # Flask API: GET /health, POST /predict
-│   ├── requirements.txt            # Python dependency declarations
-│   ├── .env.example                # Backend runtime env vars
-│   ├── models/
-│   │   └── final_credit_model_pipeline.pkl   # Trained pipeline (not committed — see below)
-│   └── static/img/                 # EDA plots (used in this README and About page)
-├── .env.example                     # Frontend env vars (FLASK_API_URL)
-└── package.json                     # Next.js project config
+├── client/                          # Next.js frontend (App Router)
+│   ├── app/                       # Pages and routes
+│   │   ├── api/predict/route.ts   # Server-side proxy to the Flask backend
+│   │   ├── page.tsx               # Landing page
+│   │   ├── predict/page.tsx       # Prediction form page
+│   │   ├── result/page.tsx        # Prediction result page
+│   │   └── about/page.tsx         # About page
+│   ├── components/               # Shared React UI components
+│   │   ├── predict-form.tsx       # Form + real API call to /api/predict
+│   │   ├── result-card.tsx        # Renders the prediction result
+│   │   ├── navbar.tsx             # Navigation header
+│   │   └── ui/                    # UI primitives (shadcn-style)
+│   ├── lib/                      # Shared utilities
+│   │   ├── prediction-engine.ts   # Client-side fallback prediction
+│   │   └── utils.ts               # Tailwind class merge helper
+│   ├── package.json              # Next.js project config
+│   ├── tsconfig.json             # TypeScript configuration
+│   ├── next.config.mjs           # Next.js config
+│   └── .env.example              # Frontend env vars (FLASK_API_URL)
+├── server/                         # Flask backend (API-only)
+│   └── web/
+│       ├── app.py                # Flask API: GET /health, POST /predict
+│       ├── train_model.py        # Model training script
+│       ├── requirements.txt      # Python dependency declarations
+│       ├── .env.example          # Backend runtime env vars
+│       ├── models/
+│       │   └── credit_approval_model.pkl  # Trained pipeline (not committed)
+│       └── static/img/           # EDA plots
+├── LICENSE                         # MIT License
+└── README.md                       # This file
 ```
 
-> **Note:** `web/models/final_credit_model_pipeline.pkl` is excluded from git via `.gitignore` (large binary). See [Quick Start](#-quick-start) for how to provide it locally.
+> **Note:** `server/web/models/credit_approval_model.pkl` is excluded from git via `.gitignore` (large binary). Run `python server/web/train_model.py` to generate it, or provide your own.
 
 ---
 
@@ -188,11 +199,14 @@ cd Credit-card-Auto-Approval-prediction
 ### 2. Backend — Flask API
 
 ```bash
-cd web
+cd server/web
 python3 -m venv .venv && source .venv/bin/activate
 pip install --upgrade pip && pip install -r requirements.txt
 
-# place the trained pipeline at web/models/final_credit_model_pipeline.pkl
+# place the trained pipeline at server/web/models/credit_approval_model.pkl
+# or generate it by running:
+python train_model.py
+
 cp .env.example .env
 python app.py
 ```
@@ -206,6 +220,7 @@ curl http://127.0.0.1:8080/health
 ### 3. Frontend — Next.js (new terminal, from repo root)
 
 ```bash
+cd client
 pnpm install
 cp .env.example .env.local     # set FLASK_API_URL=http://127.0.0.1:8080
 pnpm dev
@@ -217,8 +232,8 @@ Open **http://localhost:3000** 🎉
 
 | Terminal | Command | Runs on |
 | :--- | :--- | :--- |
-| 1 — Backend | `cd web && python app.py` | `http://127.0.0.1:8080` |
-| 2 — Frontend | `pnpm dev` | `http://localhost:3000` |
+| 1 — Backend | `cd server/web && python app.py` | `http://127.0.0.1:8080` |
+| 2 — Frontend | `cd client && pnpm dev` | `http://localhost:3000` |
 
 Both must be running — the frontend's `/api/predict` route forwards live requests to `FLASK_API_URL`.
 
@@ -228,13 +243,13 @@ Both must be running — the frontend's `/api/predict` route forwards live reque
 
 | Variable | Used by | Example | Description |
 | :--- | :--- | :--- | :--- |
-| `FLASK_API_URL` | Next.js (`app/api/predict/route.ts`) | `http://127.0.0.1:8080` | Base URL of the deployed Flask backend. Server-side only — never exposed to the browser. |
-| `FLASK_DEBUG` | Flask (`web/app.py`) | `false` | Flask debug mode. Keep `false` in production. |
-| `FLASK_PORT` | Flask (`web/app.py`) | `8080` | Port the Flask API listens on. |
-| `FLASK_HOST` | Flask (`web/app.py`) | `0.0.0.0` | Host/interface Flask binds to. |
-| `LOG_LEVEL` | Flask (`web/app.py`) | `INFO` | Python logging level for the API. |
+| `FLASK_API_URL` | Next.js (`client/app/api/predict/route.ts`) | `http://127.0.0.1:8080` | Base URL of the deployed Flask backend. Server-side only — never exposed to the browser. |
+| `FLASK_DEBUG` | Flask (`server/web/app.py`) | `false` | Flask debug mode. Keep `false` in production. |
+| `FLASK_PORT` | Flask (`server/web/app.py`) | `8080` | Port the Flask API listens on. |
+| `FLASK_HOST` | Flask (`server/web/app.py`) | `0.0.0.0` | Host/interface Flask binds to. |
+| `LOG_LEVEL` | Flask (`server/web/app.py`) | `INFO` | Python logging level for the API. |
 
-Example files are committed for both sides: `.env.example` (root, Next.js) and `web/.env.example` (Flask).
+Example files are committed for both sides: `client/.env.example` (Next.js) and `server/web/.env.example` (Flask).
 
 ### Setting `FLASK_API_URL` on Vercel
 
@@ -251,15 +266,15 @@ This project ships as **two independently deployed services**:
 
 | Service | What | Where |
 | :--- | :--- | :--- |
-| **Frontend** | Next.js app (`app/`, `components/`) | Vercel |
-| **Backend** | Flask API (`web/`) | A Python-friendly host — **not Vercel** |
+| **Frontend** | Next.js app (`client/`) | Vercel |
+| **Backend** | Flask API (`server/web/`) | A Python-friendly host — **not Vercel** |
 
 Vercel's serverless runtime isn't built for a long-running Flask process with a loaded scikit-learn model. **Vercel hosts the frontend only.** Deploy the Flask backend on:
 
 - [Render](https://render.com/) · [Railway](https://railway.app/) · [Fly.io](https://fly.io/) · AWS (EC2 / Elastic Beanstalk)
 
 **Steps:**
-1. Deploy `web/` to your chosen Python host — make sure `final_credit_model_pipeline.pkl` is present in that deployment (it's git-ignored, so upload/bake it in separately).
+1. Deploy `server/web/` to your chosen Python host — make sure `credit_approval_model.pkl` is present in that deployment (it's git-ignored, so upload/bake it in separately).
 2. Verify: `curl https://<your-backend-host>/health`
 3. Set `FLASK_API_URL` on Vercel to that URL and redeploy the frontend.
 
@@ -334,7 +349,7 @@ Flask is JSON-only — no HTML routes remain on the backend.
 </td></tr>
 </table>
 
-The frontend never calls this directly from the browser — it goes through `app/api/predict/route.ts`, forwarding the same shape server-to-server.
+The frontend never calls this directly from the browser — it goes through `client/app/api/predict/route.ts`, forwarding the same shape server-to-server.
 
 ---
 
@@ -359,11 +374,11 @@ Credit scoring is treated as a **binary classification** problem. Numerical attr
 
 </div>
 
-**EDA visuals** (`web/static/img/`):
+**EDA visuals** (`server/web/static/img/`):
 
 <div align="center">
-<img src="web/static/img/eda_age_distribution.png" width="45%" />
-<img src="web/static/img/eda_income_distribution.png" width="45%" />
+<img src="server/web/static/img/eda_age_distribution.png" width="45%" />
+<img src="server/web/static/img/eda_income_distribution.png" width="45%" />
 </div>
 
 ---
@@ -415,7 +430,7 @@ Make sure your virtual environment is activated.
 
 <details>
 <summary><b>GET /health returns 503</b></summary>
-The model file is missing. Place <code>final_credit_model_pipeline.pkl</code> at <code>web/models/</code> — it's git-ignored, so it must be added manually or included in your deployment separately.
+The model file is missing. Generate it by running <code>python train_model.py</code> in <code>server/web/</code> — it's git-ignored, so it must be added manually or included in your deployment separately.
 </details>
 
 ---
@@ -445,3 +460,4 @@ Distributed under the MIT License. See [`LICENSE`](LICENSE) for details.
 <img src="https://capsule-render.vercel.app/api?type=waving&color=0:1e293b,100:2563eb&height=100&section=footer" width="100%"/>
 
 </div>
+# Updated by script
