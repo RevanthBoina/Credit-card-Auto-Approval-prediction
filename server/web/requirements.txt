@@ -8,7 +8,8 @@ Flask-CORS==5.0.0
 # Any other version can fail to unpickle internal sklearn classes.
 scikit-learn==1.6.1
 xgboost
-imbalanced-learn
+imbalanced-learn==0.13.0
+imblearn==0.0
 pandas==2.2.2
 numpy==1.26.4
 
