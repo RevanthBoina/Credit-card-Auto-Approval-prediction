@@ -4,17 +4,6 @@
 previewsEnabled: false
 
 services:
-  # Backend API Service
-  - name: credit-approval-api
-    plan: free
-    region: oregon
-    type: web_service
-    runtime: python
-    rootDir: server/web
-    buildCommand: pip install -r requirements.txt
-    startCommand: python app.py
-    healthCheckPath: /
-
   # Frontend Web Service
   - name: credit-approval-frontend
     plan: free
@@ -28,6 +17,4 @@ services:
       - key: NODE_ENV
         value: production
       - key: FLASK_API_URL
-        fromService:
-          name: credit-approval-api
-          envVarKey: RENDER_EXTERNAL_URL
+        value: https://credit-approval-api-fb03.onrender.com
