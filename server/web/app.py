@@ -24,6 +24,7 @@ import os
 import joblib
 import pandas as pd
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -35,6 +36,7 @@ logging.basicConfig(
 logger = logging.getLogger("credit_approval_api")
 
 app = Flask(__name__)
+CORS(app, resources={r"/predict": {"origins": "*"}})
 
 # ---------------------------------------------------------------------------
 # Model loading

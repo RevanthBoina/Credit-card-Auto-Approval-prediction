@@ -1,5 +1,6 @@
 # Web framework (API-only backend; JSON in/out, no server-rendered forms)
 Flask==3.0.3
+Flask-CORS==5.0.0
 
 # Machine-learning stack
 # Pinned to exactly match the scikit-learn version the .pkl was trained with
