@@ -4,6 +4,20 @@
 previewsEnabled: false
 
 services:
+  # Backend API Service
+  - name: credit-approval-api
+    plan: free
+    region: oregon
+    type: web_service
+    runtime: python
+    rootDir: server/web
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    healthCheckPath: /
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+
   # Frontend Web Service
   - name: credit-approval-frontend
     plan: free
