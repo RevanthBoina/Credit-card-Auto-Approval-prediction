@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, User, DollarSign, Briefcase } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -13,6 +13,8 @@ import { predict, PredictionInput } from '@/lib/prediction-engine'
 // EducationLevel, Ethnicity, PriorDefault, Employed, DriversLicense, Citizen, Income
 
 type FormData = Record<string, string>
+
+const STORAGE_KEY = 'credit_card_form_data'
 
 async function runPrediction(
   data: FormData
@@ -104,6 +106,19 @@ export default function PredictForm() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
 
+  // Restore form data from sessionStorage on mount
+  useEffect(() => {
+    const storedData = sessionStorage.getItem(STORAGE_KEY)
+    if (storedData) {
+      try {
+        const parsedData = JSON.parse(storedData) as FormData
+        setForm(parsedData)
+      } catch {
+        // Invalid stored data, ignore
+      }
+    }
+  }, [])
+
   const sections = [
     {
       title: 'Personal Information',
@@ -161,6 +176,9 @@ export default function PredictForm() {
     e.preventDefault()
     if (!validate()) return
     setLoading(true)
+    
+    // Save form data to sessionStorage for restoration
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(form))
     
     try {
       const result = await runPrediction(form)
