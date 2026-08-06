@@ -1,6 +1,4 @@
 {
-  "framework": "nextjs",
-  "rootDirectory": "client",
   "buildCommand": "pnpm run build",
   "installCommand": "pnpm install",
   "outputDirectory": ".next"
