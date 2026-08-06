@@ -1,11 +1,13 @@
 'use client'
 
 import { useSearchParams, useRouter } from 'next/navigation'
-import { CheckCircle2, XCircle, ArrowLeft, RefreshCw, Zap } from 'lucide-react'
+import { CheckCircle2, XCircle, ArrowLeft, RefreshCw, Zap, Trash2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useEffect, useState } from 'react'
+
+const STORAGE_KEY = 'credit_card_form_data'
 
 export default function ResultCard() {
   const params = useSearchParams()
@@ -20,6 +22,11 @@ export default function ResultCard() {
     const timer = setTimeout(() => setAnimated(true), 100)
     return () => clearTimeout(timer)
   }, [])
+
+  function clearFormAndRetry() {
+    sessionStorage.removeItem(STORAGE_KEY)
+    router.push('/predict')
+  }
 
   if (!params.get('approved')) {
     return (
@@ -109,9 +116,14 @@ export default function ResultCard() {
       {/* Actions */}
       <div className="flex flex-col gap-3 sm:flex-row">
         <Button variant="outline" onClick={() => router.push('/predict')} className="flex-1 gap-2">
-          <RefreshCw className="h-4 w-4" /> Try Again
+          <RefreshCw className="h-4 w-4" /> Try Again (Restore Values)
         </Button>
-        <Button onClick={() => router.push('/')} className="flex-1 gap-2">
+        <Button variant="secondary" onClick={clearFormAndRetry} className="flex-1 gap-2">
+          <Trash2 className="h-4 w-4" /> Clear & Start Fresh
+        </Button>
+      </div>
+      <div className="flex justify-center">
+        <Button variant="ghost" onClick={() => router.push('/')} className="gap-2">
           <ArrowLeft className="h-4 w-4" /> Back to Home
         </Button>
       </div>
