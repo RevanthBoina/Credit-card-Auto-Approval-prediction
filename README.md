@@ -2,7 +2,7 @@
 
 <img src="https://capsule-render.vercel.app/api?type=waving&color=0:2563eb,100:1e293b&height=220&section=header&text=CardApprove%20AI&fontSize=60&fontColor=ffffff&animation=fadeIn&fontAlignY=38&desc=Credit%20Card%20Approval%20Prediction%2C%20powered%20by%20ML&descAlignY=58&descSize=18" width="100%"/>
 
-<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=20&duration=3000&pause=800&color=2563EB&center=true&vCenter=true&width=650&lines=Next.js+frontend+%2B+Flask+ML+API+backend;Random+Forest+Classifier+%C2%B7+95.8%25+accuracy;Real-time+credit+decisions%2C+explainable+probabilities" alt="Typing SVG" />
+<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=20&duration=3000&pause=800&color=2563EB&center=true&vCenter=true&width=650&lines=Next.js+frontend+%2B+Flask+ML+API+backend;Logistic+Regression+%C2%B7+97.5%25+accuracy;Real-time+credit+decisions%2C+explainable+probabilities" alt="Typing SVG" />
 
 <br/>
 
@@ -73,7 +73,7 @@ The project is built the way production ML apps actually ship: **a UI layer and 
 ## ✨ Key Features
 
 - 🚀 **Real-time Scoring Engine** — instant predictions over a JSON API
-- 🧠 **Trained Logistic Regression Pipeline** — 85%+ accuracy
+- 🧠 **Trained Logistic Regression Pipeline** — 97.5% accuracy
 - 🔍 **Explainable Output** — returns class **and** approval probability, not just a verdict
 - 🧩 **Decoupled Architecture** — Next.js frontend and Flask backend deploy, scale, and evolve independently
 - 🔐 **Server-side Proxying** — the browser never talks to the ML backend directly
@@ -147,6 +147,7 @@ sequenceDiagram
 ├── client/                          # Next.js frontend (App Router)
 │   ├── app/                       # Pages and routes
 │   │   ├── api/predict/route.ts   # Server-side proxy to the Flask backend
+│   │   ├── api/explain/route.ts   # Server-side AI rejection explainer (OpenAI)
 │   │   ├── page.tsx               # Landing page
 │   │   ├── predict/page.tsx       # Prediction form page
 │   │   ├── result/page.tsx        # Prediction result page
@@ -154,7 +155,9 @@ sequenceDiagram
 │   ├── components/               # Shared React UI components
 │   │   ├── predict-form.tsx       # Form + real API call to /api/predict
 │   │   ├── result-card.tsx        # Renders the prediction result
+│   │   ├── rejection-assistant.tsx # AI explanation card (rejections only)
 │   │   ├── navbar.tsx             # Navigation header
+│   │   ├── theme-toggle.tsx       # Dark/light mode toggle
 │   │   └── ui/                    # UI primitives (shadcn-style)
 │   ├── lib/                      # Shared utilities
 │   │   ├── prediction-engine.ts   # Client-side fallback prediction
@@ -162,7 +165,7 @@ sequenceDiagram
 │   ├── package.json              # Next.js project config
 │   ├── tsconfig.json             # TypeScript configuration
 │   ├── next.config.mjs           # Next.js config
-│   └── .env.example              # Frontend env vars (FLASK_API_URL)
+│   └── .env.example              # Frontend env vars (FLASK_API_URL, OPENAI_API_KEY)
 ├── server/                         # Flask backend (API-only)
 │   └── web/
 │       ├── app.py                # Flask API: GET /health, POST /predict
@@ -172,6 +175,8 @@ sequenceDiagram
 │       ├── models/
 │       │   └── credit_approval_model.pkl  # Trained pipeline (not committed)
 │       └── static/img/           # EDA plots
+├── render.yaml                     # Render blueprint (backend + frontend)
+├── vercel.json                     # Vercel frontend build config
 ├── LICENSE                         # MIT License
 └── README.md                       # This file
 ```
@@ -185,9 +190,13 @@ sequenceDiagram
 ### Prerequisites
 
 ```bash
-node --version      # 18+
-python3 --version   # 3.9+
+node --version      # 20+ (Next.js 16 requirement)
+python3 --version   # 3.9–3.12 (see note below on 3.13)
 ```
+
+> **Python 3.13 note:** `requirements.txt` pins `pandas==2.2.2`, which has no
+> wheel for Python 3.13 and will fail to build from source. Use Python 3.9–3.12
+> for the backend, or relax the pin if you must use 3.13.
 
 ### 1. Clone
 
@@ -203,18 +212,19 @@ cd server/web
 python3 -m venv .venv && source .venv/bin/activate
 pip install --upgrade pip && pip install -r requirements.txt
 
-# place the trained pipeline at server/web/models/credit_approval_model.pkl
-# or generate it by running:
+# Generate the trained pipeline (git-ignored, must be created locally):
 python train_model.py
 
-cp .env.example .env
-python app.py
+# Start the API. The backend reads env vars from the process environment;
+# set them inline or export them before running (see server/web/.env.example).
+FLASK_PORT=8080 python app.py
 ```
 
 Runs on **http://127.0.0.1:8080** — verify with:
 
 ```bash
 curl http://127.0.0.1:8080/health
+# {"model_loaded":true,"status":"ok","success":true}
 ```
 
 ### 3. Frontend — Next.js (new terminal, from repo root)
@@ -232,7 +242,7 @@ Open **http://localhost:3000** 🎉
 
 | Terminal | Command | Runs on |
 | :--- | :--- | :--- |
-| 1 — Backend | `cd server/web && python app.py` | `http://127.0.0.1:8080` |
+| 1 — Backend | `cd server/web && source .venv/bin/activate && FLASK_PORT=8080 python app.py` | `http://127.0.0.1:8080` |
 | 2 — Frontend | `cd client && pnpm dev` | `http://localhost:3000` |
 
 Both must be running — the frontend's `/api/predict` route forwards live requests to `FLASK_API_URL`.
@@ -243,11 +253,14 @@ Both must be running — the frontend's `/api/predict` route forwards live reque
 
 | Variable | Used by | Example | Description |
 | :--- | :--- | :--- | :--- |
-| `FLASK_API_URL` | Next.js (`client/app/api/predict/route.ts`) | `http://127.0.0.1:8080` | Base URL of the deployed Flask backend. Server-side only — never exposed to the browser. |
+| `FLASK_API_URL` | Next.js (`client/app/api/predict/route.ts`) | `http://127.0.0.1:8080` | Base URL of the Flask backend. Server-side only — never exposed to the browser. Defaults to the deployed Render backend if unset. |
+| `OPENAI_API_KEY` | Next.js (`client/app/api/explain/route.ts`) | `sk-...` | Server-side only. Powers the rejection-explanation assistant. If unset, `/api/explain` falls back to a local rule-based explanation. **Never commit this** — put it in `client/.env.local` (git-ignored). |
 | `FLASK_DEBUG` | Flask (`server/web/app.py`) | `false` | Flask debug mode. Keep `false` in production. |
 | `FLASK_PORT` | Flask (`server/web/app.py`) | `8080` | Port the Flask API listens on. |
 | `FLASK_HOST` | Flask (`server/web/app.py`) | `0.0.0.0` | Host/interface Flask binds to. |
 | `LOG_LEVEL` | Flask (`server/web/app.py`) | `INFO` | Python logging level for the API. |
+
+> **Backend env loading:** `app.py` reads these via `os.environ` directly — it does **not** call `load_dotenv()`. `server/web/.env.example` is a reference of the variables; set them in your shell, your host's dashboard, or export them before `python app.py`. The frontend side **does** load `client/.env.local` automatically (Next.js built-in).
 
 Example files are committed for both sides: `client/.env.example` (Next.js) and `server/web/.env.example` (Flask).
 
@@ -275,7 +288,7 @@ Vercel's serverless runtime isn't built for a long-running Flask process with a 
 
 **Steps:**
 1. Deploy `server/web/` to your chosen Python host — make sure `credit_approval_model.pkl` is present in that deployment (it's git-ignored, so upload/bake it in separately).
-2. Verify: `curl https://<your-backend-host>/health`
+2. Verify: `curl https://<your-backend-host>/health` (the Render blueprint in `render.yaml` uses `/` as its `healthCheckPath`, but `/health` reports model-load status).
 3. Set `FLASK_API_URL` on Vercel to that URL and redeploy the frontend.
 
 ---
@@ -329,8 +342,19 @@ Flask is JSON-only — no HTML routes remain on the backend.
 <tr><td><b>200 — success</b></td><td>
 
 ```json
-{ "success": true, "prediction": 1, "prediction_label": "Approved", "probability": 0.87 }
+{
+  "success": true,
+  "prediction": 1,
+  "prediction_label": "Approved",
+  "probability": 0.87,
+  "raw_probability": 0.73
+}
 ```
+
+`probability` is the display value (approved outcomes are floored to ≥ 0.65 so the
+shown percentage reads higher than the raw model probability; rejections are
+floored to ≥ 0.20 but capped below 0.5 so the verdict never flips). `raw_probability`
+is the model's unmodified output.
 
 </td></tr>
 <tr><td><b>422 — validation error</b></td><td>
@@ -356,10 +380,12 @@ The frontend never calls this directly from the browser — it goes through `cli
 ## 🧠 Machine Learning Pipeline
 
 ```
-Applicant Data ──► StandardScaler ──► Label Encoding ──► LogisticRegression
+Applicant Data ──► ColumnTransformer ──► LogisticRegression
+                       ├─ numeric:  StandardScaler   (Age, Debt, YearsEmployed, Income)
+                       └─ category: OneHotEncoder    (drop="first", handle_unknown="ignore")
 ```
 
-Credit scoring is treated as a **binary classification** problem. Numerical attributes are scaled, categorical attributes are label-encoded, and predictions return a class (`1` = Approved, `0` = Rejected) plus the model's confidence probability.
+Credit scoring is treated as a **binary classification** problem. Numerical attributes are scaled, categorical attributes are one-hot encoded (dropping the first level to avoid collinearity), and predictions return a class (`1` = Approved, `0` = Rejected) plus the model's confidence probability. Training uses synthetic data generated by `train_model.py` with rule-based labels (~65% approved).
 
 ---
 
@@ -367,10 +393,17 @@ Credit scoring is treated as a **binary classification** problem. Numerical attr
 
 <div align="center">
 
-| Classifier | Accuracy | F1-Score | Status |
+| Classifier | Accuracy | F1 (macro) | Status |
 | :--- | :---: | :---: | :--- |
-| 🏆 **Logistic Regression** | **85%+** | **0.85** | **Selected Model** |
+| 🏆 **Logistic Regression** | **97.5%** | **0.97** | **Selected Model** |
 | Rule-based Engine | N/A | N/A | Client-side fallback |
+
+Re-trained on 5,000 synthetic samples (65% approved / 35% rejected, 80/20 split):
+
+| Class | Precision | Recall | F1 |
+| :--- | :---: | :---: | :---: |
+| Rejected | 0.94 | 0.99 | 0.97 |
+| Approved | 0.99 | 0.97 | 0.98 |
 
 </div>
 
@@ -387,9 +420,10 @@ Credit scoring is treated as a **binary classification** problem. Numerical attr
 
 - [x] Split monolithic Flask app into Next.js frontend + Flask JSON API
 - [x] Server-side `/api/predict` proxy (no direct browser → Flask calls)
+- [x] Result-page explainability — AI Assistant explains rejections (LLM-based, with rule fallback; not SHAP)
 - [ ] Dockerize the Flask backend for one-command deployment
 - [ ] Add automated tests for `/predict` validation logic
-- [ ] Model explainability (SHAP values) surfaced in the result UI
+- [ ] SHAP-based per-feature attribution surfaced in the result UI
 - [ ] CI pipeline for lint + type-check + backend tests
 
 Have an idea? Open an issue — contributions below 👇
@@ -460,15 +494,3 @@ Distributed under the MIT License. See [`LICENSE`](LICENSE) for details.
 <img src="https://capsule-render.vercel.app/api?type=waving&color=0:1e293b,100:2563eb&height=100&section=footer" width="100%"/>
 
 </div>
-# Updated by script
-# Updated by Prudhvi
-# Finalized by Jayram
-# Update by Renuka 1
-# Update by Renuka 2
-# Update by Renuka 3
-# Update by Prudhvi 1
-# Update by Prudhvi 2
-# Update by Prudhvi 3
-# Update by Jayram 1
-# Update by Jayram 2
-# Update by Jayram 3
