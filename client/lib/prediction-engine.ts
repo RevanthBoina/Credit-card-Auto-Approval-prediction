@@ -34,7 +34,11 @@ export interface PredictionResult {
 }
 
 // Sigmoid calibration constants
-const THRESHOLD = 14.0  // Score where probability = 50%
+// Lowered threshold + amplified income so the fallback ("Demo Mode") produces
+// approval rates and probabilities comparable to the retrained backend model
+// (~65% approval rate for typical applicants), instead of rejecting most
+// normal profiles.
+const THRESHOLD = 11.0  // Score where probability = 50%
 const STEEPNESS = 0.5  // Lower = smoother spread of probabilities
 
 /**
@@ -43,14 +47,15 @@ const STEEPNESS = 0.5  // Lower = smoother spread of probabilities
 function calculateScore(data: PredictionInput): number {
   let score = 0
 
-  // Income contribution (log scale, most important factor)
-  score += Math.log1p(data.Income) / 2
+  // Income contribution (log scale, most important factor) - amplified so
+  // income moves the probability meaningfully.
+  score += Math.log1p(data.Income) / 1.4
 
   // Employment status
-  score += data.Employed === 'Yes' ? 2.5 : -1.0
+  score += data.Employed === 'Yes' ? 3.0 : -1.0
   
   // Years employed
-  score += data.YearsEmployed / 2
+  score += data.YearsEmployed / 1.6
 
   // Age (normalized, range roughly -1 to +4)
   const ageNorm = (data.Age - 25) / 8
@@ -65,13 +70,13 @@ function calculateScore(data: PredictionInput): number {
   // Driver's license
   score += data.DriversLicense === 'Yes' ? 0.5 : 0
 
-  // Education level
+  // Education level - moderate weighting (no longer dominant)
   const eduScores: Record<string, number> = {
-    'none': -0.5,
+    'none': -1.0,
     'high_school': 0.5,
-    'bachelors': 1.5,
-    'masters': 2.0,
-    'phd': 2.5,
+    'bachelors': 1.0,
+    'masters': 1.4,
+    'phd': 1.8,
   }
   score += eduScores[data.EducationLevel] ?? 0
 
@@ -79,7 +84,7 @@ function calculateScore(data: PredictionInput): number {
   score += data.PriorDefault === 'Yes' ? -4.0 : 0
 
   // Debt ratio (normalized to typical debt range)
-  score -= data.Debt / 5000
+  score -= data.Debt / 6000
 
   return score
 }
@@ -104,17 +109,31 @@ function scoreToProbability(score: number): number {
 /**
  * Main prediction function.
  * Returns approval decision and probability.
+ *
+ * Mirrors the backend's display adjustments so Demo Mode reads consistently
+ * friendlier: approved outcomes are remapped from [0.5, 1.0] onto [0.65, 1.0]
+ * (always >= raw), and rejected outcomes get a 20% minimum display floor
+ * (capped below 50% so the verdict never flips).
  */
 export function predict(input: PredictionInput): PredictionResult {
   const score = calculateScore(input)
-  const probability = scoreToProbability(score)
-  
+  const rawProbability = scoreToProbability(score)
+
   // Approval threshold at 50% probability
-  const approved = probability >= 0.5
+  const approved = rawProbability >= 0.5
+
+  let displayProbability: number
+  if (approved && rawProbability >= 0.5) {
+    const t = Math.min(1, Math.max(0, (rawProbability - 0.5) / 0.5))
+    displayProbability = Math.max(rawProbability, 0.65 + t * 0.35)
+  } else {
+    // Rejected: believable floor, never crossing into approval territory.
+    displayProbability = Math.min(Math.max(rawProbability, 0.2), 0.49)
+  }
 
   return {
     approved,
-    probability: Math.round(probability * 100),
+    probability: Math.round(displayProbability * 100),
     isFallback: true,
     score,
   }

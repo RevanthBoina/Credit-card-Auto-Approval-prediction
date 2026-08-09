@@ -14,8 +14,12 @@ import { NextRequest, NextResponse } from 'next/server'
  *
  * Set FLASK_API_URL in .env.local, e.g.:
  *   FLASK_API_URL=http://127.0.0.1:8080
+ *
+ * If unset, this route falls back to the deployed backend so preview/standalone
+ * deployments without the env var still use the real model instead of the
+ * client-side Demo Mode.
  */
-const FLASK_API_URL = process.env.FLASK_API_URL ?? 'http://127.0.0.1:8080'
+const FLASK_API_URL = process.env.FLASK_API_URL ?? 'https://credit-approval-api-fb03.onrender.com'
 
 export async function POST(request: NextRequest) {
   let body: unknown
