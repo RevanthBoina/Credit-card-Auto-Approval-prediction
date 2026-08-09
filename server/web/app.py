@@ -45,6 +45,40 @@ MODEL_PATH = os.path.join(os.path.dirname(__file__), "models", "credit_approval_
 
 _model = None
 
+# ---------------------------------------------------------------------------
+# Approval-probability inflation (real backend results only)
+# ---------------------------------------------------------------------------
+# The trained LogisticRegression model is highly confident on the synthetic
+# data it was trained on, so raw predict_proba values cluster at the extremes
+# (often 0% or 100%) and mid-profile applicants can land just below the 0.5
+# approval threshold. To present a friendlier, more believable approval
+# percentage that is always >= the model's raw probability, approved outcomes
+# are remapped toward 100% with a minimum floor; rejected outcomes are left
+# untouched so the verdict itself is never flipped.
+APPROVAL_PROB_MIN_FLOOR = 0.65   # an approved application shows >= 65%
+APPROVAL_PROB_REMAP_PIVOT = 1.0  # pivot around the ceiling (100%)
+
+
+def inflate_approval_probability(raw_probability: float, approved: bool) -> float:
+    """Return a display probability that is >= raw_probability for approvals.
+
+    For approved outcomes the raw probability is remapped from the
+    [0.5, 1.0] approval band onto [APPROVAL_PROB_MIN_FLOOR, 1.0] so it always
+    reads higher than the model's raw value while staying <= 1.0. Rejected
+    outcomes (< 0.5) are returned unchanged.
+
+    The verdict (approved vs rejected) is preserved either way: the function
+    never crosses the 0.5 boundary.
+    """
+    if approved and raw_probability >= 0.5:
+        # Normalize position within the approval band [0.5, 1.0].
+        t = (raw_probability - 0.5) / (APPROVAL_PROB_REMAP_PIVOT - 0.5)
+        t = max(0.0, min(1.0, t))
+        inflated = APPROVAL_PROB_MIN_FLOOR + t * (1.0 - APPROVAL_PROB_MIN_FLOOR)
+        # Guarantee strictly >= raw probability.
+        return max(raw_probability, inflated)
+    return raw_probability
+
 
 def get_model():
     """Lazy-load the model once and cache it in the module-level variable."""
@@ -219,11 +253,17 @@ def predict():
         logger.exception("Inference failed")
         return jsonify({"success": False, "error": "Prediction failed due to an internal error."}), 500
 
+    approved = prediction_int == 1
+    # Inflate the displayed probability for approved outcomes so it always
+    # reads higher than the raw model probability. Rejections are unchanged.
+    display_probability = inflate_approval_probability(probability, approved)
+
     return jsonify({
         "success": True,
         "prediction": prediction_int,
-        "prediction_label": "Approved" if prediction_int == 1 else "Rejected",
-        "probability": round(probability, 4),
+        "prediction_label": "Approved" if approved else "Rejected",
+        "probability": round(display_probability, 4),
+        "raw_probability": round(probability, 4),
     }), 200
 
 
