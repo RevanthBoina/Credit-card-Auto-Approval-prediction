@@ -469,18 +469,6 @@ The model file is missing. Generate it by running <code>python train_model.py</c
 
 ---
 
-## ⭐ Star History
-
-<div align="center">
-<a href="https://star-history.com/#RevanthBoina/Credit-card-Auto-Approval-prediction&Date">
-  <img src="https://api.star-history.com/svg?repos=RevanthBoina/Credit-card-Auto-Approval-prediction&type=Date" width="70%" />
-</a>
-</div>
-
-If this project helped you, consider giving it a ⭐ — it genuinely helps!
-
----
-
 ## 📄 License
 
 Distributed under the MIT License. See [`LICENSE`](LICENSE) for details.
