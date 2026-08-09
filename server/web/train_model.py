@@ -97,19 +97,25 @@ def generate_synthetic_data(n_samples: int = 5000) -> pd.DataFrame:
 def generate_labels(df: pd.DataFrame) -> np.ndarray:
     """
     Generate approval labels based on logical rules with forced balance.
-    
+
     Positive factors: high income, employed, long tenure, educated, bank customer
     Negative factors: prior default, high debt, no employment
+
+    The approval threshold sits at the ~35th percentile of scores so a healthy
+    majority of plausible applicants are approved (~65% approval rate), matching
+    the friendlier posture the product wants to project. Education is weighted
+    moderately (not dominantly) so a high-school-only applicant with solid
+    income/employment can still qualify.
     """
     np.random.seed(42)
     scores = np.zeros(len(df))
     
     # Income contribution (most important)
-    scores += np.log1p(df["Income"]) / 2
+    scores += np.log1p(df["Income"]) / 1.4  # amplified so income moves the needle
     
     # Employment status
-    scores += (df["Employed"] == "Yes").astype(int) * 2.5
-    scores += df["YearsEmployed"] / 2
+    scores += (df["Employed"] == "Yes").astype(int) * 3.0
+    scores += df["YearsEmployed"] / 1.6
     
     # Age (mature applicants more stable)
     scores += ((df["Age"] - 25) / 8).clip(-1, 4)
@@ -120,20 +126,19 @@ def generate_labels(df: pd.DataFrame) -> np.ndarray:
     scores += (df["DriversLicense"] == "Yes").astype(int) * 0.5
     
     # Education
-    edu_map = {"none": -0.5, "high_school": 0.5, "bachelors": 1.5, "masters": 2.0, "phd": 2.5}
+    edu_map = {"none": -1.0, "high_school": 0.5, "bachelors": 1.0, "masters": 1.4, "phd": 1.8}
     scores += df["EducationLevel"].map(edu_map)
     
     # Negative factors
     scores -= (df["PriorDefault"] == "Yes").astype(int) * 4.0
-    scores -= df["Debt"] / 5000
+    scores -= df["Debt"] / 6000
     
     # Add noise
     scores += np.random.normal(0, 1.5, len(df))
     
-    # Find threshold to get ~50% approval rate
-    threshold_low = np.percentile(scores, 45)
-    threshold_high = np.percentile(scores, 55)
-    threshold = (threshold_low + threshold_high) / 2
+    # Lower threshold -> higher approval rate (~65%). Previously this sat at
+    # the ~50th percentile, which rejected most "normal" applicants.
+    threshold = np.percentile(scores, 35)
     
     labels = (scores > threshold).astype(int)
     return labels

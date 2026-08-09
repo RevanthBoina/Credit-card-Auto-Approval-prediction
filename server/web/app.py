@@ -48,24 +48,29 @@ _model = None
 # ---------------------------------------------------------------------------
 # Approval-probability inflation (real backend results only)
 # ---------------------------------------------------------------------------
-# The trained LogisticRegression model is highly confident on the synthetic
-# data it was trained on, so raw predict_proba values cluster at the extremes
-# (often 0% or 100%) and mid-profile applicants can land just below the 0.5
-# approval threshold. To present a friendlier, more believable approval
-# percentage that is always >= the model's raw probability, approved outcomes
-# are remapped toward 100% with a minimum floor; rejected outcomes are left
-# untouched so the verdict itself is never flipped.
+# Two display adjustments, both confined to the backend result so the verdict
+# (approved vs rejected) is NEVER flipped:
+#
+#  * Approved outcomes are remapped from the [0.5, 1.0] band onto
+#    [APPROVAL_PROB_MIN_FLOOR, 1.0], so the displayed approval percentage is
+#    always >= the model's raw probability (friendlier, reads higher).
+#
+#  * Rejected outcomes get a minimum display floor so a poor applicant never
+#    sees a demoralizing 0.0% / 0.4%. The floor is capped below 0.5 so the
+#    verdict can never flip to "approved".
 APPROVAL_PROB_MIN_FLOOR = 0.65   # an approved application shows >= 65%
 APPROVAL_PROB_REMAP_PIVOT = 1.0  # pivot around the ceiling (100%)
+REJECTED_PROB_DISPLAY_FLOOR = 0.20  # a rejected application shows >= 20%
+REJECTED_PROB_DISPLAY_CAP = 0.49    # never cross into approval territory
 
 
 def inflate_approval_probability(raw_probability: float, approved: bool) -> float:
-    """Return a display probability that is >= raw_probability for approvals.
+    """Return a display probability adjusted for friendlier presentation.
 
-    For approved outcomes the raw probability is remapped from the
-    [0.5, 1.0] approval band onto [APPROVAL_PROB_MIN_FLOOR, 1.0] so it always
-    reads higher than the model's raw value while staying <= 1.0. Rejected
-    outcomes (< 0.5) are returned unchanged.
+    Approved: remapped from [0.5, 1.0] onto [APPROVAL_PROB_MIN_FLOOR, 1.0],
+    always >= raw_probability and <= 1.0.
+    Rejected: floored to REJECTED_PROB_DISPLAY_FLOOR but capped below 0.5 so
+    the verdict never flips; never less than raw.
 
     The verdict (approved vs rejected) is preserved either way: the function
     never crosses the 0.5 boundary.
@@ -77,7 +82,9 @@ def inflate_approval_probability(raw_probability: float, approved: bool) -> floa
         inflated = APPROVAL_PROB_MIN_FLOOR + t * (1.0 - APPROVAL_PROB_MIN_FLOOR)
         # Guarantee strictly >= raw probability.
         return max(raw_probability, inflated)
-    return raw_probability
+    # Rejected: apply a believable minimum floor without flipping the verdict.
+    floored = max(raw_probability, REJECTED_PROB_DISPLAY_FLOOR)
+    return min(floored, REJECTED_PROB_DISPLAY_CAP)
 
 
 def get_model():
