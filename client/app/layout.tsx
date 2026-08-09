@@ -52,11 +52,12 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               try {
-                if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                  document.documentElement.classList.add('dark');
-                } else {
-                  document.documentElement.classList.remove('dark');
-                }
+                var stored = localStorage.getItem('theme');
+                var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                var theme = stored ? stored : (prefersDark ? 'dark' : 'light');
+                var root = document.documentElement;
+                root.classList.remove('light', 'dark');
+                root.classList.add(theme);
               } catch (_) {}
             `,
           }}
