@@ -36,8 +36,9 @@ namespace = {
 def _load_helper():
     """Extract inflate_approval_probability and its constants from app.py."""
     source = open(app_path()).read()
-    # Pull just the block we need: the constants and the function.
-    start = source.index("APPROVAL_PROB_MIN_FLOOR")
+    # Pull just the block we need: the constants and the function. Start at
+    # the section header comment so multi-line comments aren't split.
+    start = source.index("# Approval-probability inflation (real backend results only)")
     end = source.index("def get_model():")
     snippet = source[start:end]
     exec(snippet, namespace)
@@ -51,6 +52,8 @@ def app_path():
 ns = _load_helper()
 inflate = ns["inflate_approval_probability"]
 FLOOR = ns["APPROVAL_PROB_MIN_FLOOR"]
+REJ_FLOOR = ns["REJECTED_PROB_DISPLAY_FLOOR"]
+REJ_CAP = ns["REJECTED_PROB_DISPLAY_CAP"]
 
 _failures = []
 
@@ -98,9 +101,20 @@ check("approved always >= raw", all_ge)
 le_one = all(inflate(p, True) <= 1.0 + 1e-12 for p in [0.5, 0.7, 0.9, 1.0])
 check("approved never > 1.0", le_one)
 
-# 7. Rejected (< 0.5) is unchanged.
-for p in [0.0, 0.1, 0.25, 0.49]:
-    check(f"rejected {p} unchanged", approx(inflate(p, False), p))
+# 7. Rejected gets a minimum display floor (>= REJ_FLOOR) without flipping.
+for p in [0.0, 0.05, 0.1, 0.25, 0.49]:
+    val = inflate(p, False)
+    check(f"rejected {p} floored >= {REJ_FLOOR}", val >= REJ_FLOOR - 1e-12)
+    check(f"rejected {p} stays < 0.5", val < 0.5)
+    check(f"rejected {p} never < raw", val >= p - 1e-12)
+
+# 7b. Very low rejected (0.0, 0.0043) -> exactly the floor.
+check("rejected 0.0 -> floor", approx(inflate(0.0, False), REJ_FLOOR))
+check("rejected 0.0043 -> floor", approx(inflate(0.0043, False), REJ_FLOOR))
+
+# 7c. A rejected prob already above the floor is unchanged (but capped).
+check("rejected 0.3 unchanged", approx(inflate(0.3, False), 0.3))
+check("rejected 0.49 capped at cap", approx(inflate(0.49, False), REJ_CAP))
 
 # 8. Verdict never flips: rejected stays < 0.5, approved stays >= floor > 0.5.
 check("rejected stays < 0.5", inflate(0.49, False) < 0.5)
