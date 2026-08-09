@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useEffect, useState } from 'react'
+import RejectionAssistant from '@/components/rejection-assistant'
 
 const STORAGE_KEY = 'credit_card_form_data'
 
@@ -107,6 +108,9 @@ export default function ResultCard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* AI Assistant — only shown for rejected applications */}
+      {!approved && <RejectionAssistant probability={probability} />}
 
       {/* Disclaimer */}
       <p className="text-xs text-muted-foreground text-center">
