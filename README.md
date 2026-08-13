@@ -426,21 +426,6 @@ handled with SMOTE during training.
 
 ---
 
-## 🗺️ Roadmap
-
-- [x] Split monolithic Flask app into Next.js frontend + Flask JSON API
-- [x] Server-side `/api/predict` proxy (no direct browser → Flask calls)
-- [x] Result-page explainability — AI Assistant explains rejections (LLM-based, with rule fallback; not SHAP)
-- [ ] Sync `web/app.py` + frontend form fields to the new UCI-based Logistic Regression pipeline (currently still on the old Kaggle-schema Random Forest model — see note at top of README)
-- [ ] Dockerize the Flask backend for one-command deployment
-- [ ] Add automated tests for `/predict` validation logic
-- [ ] SHAP-based per-feature attribution surfaced in the result UI
-- [ ] CI pipeline for lint + type-check + backend tests
-
-Have an idea? Open an issue — contributions below 👇
-
----
-
 ## 🤝 Contributing
 
 Contributions are welcome and appreciated!
